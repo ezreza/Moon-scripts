@@ -223,6 +223,7 @@ remove() {
 
 
 phpmyadmin() {
+    DOMAIN_PHPMYADMIN="myadmin.moooo.tech"
     set -e
     echo "🔍 Installing phpMyAdmin..."
 
@@ -256,7 +257,7 @@ phpmyadmin() {
         exit 1
     fi
 
-    sed -i "s/server_name [^;]*/server_name $DOMAIN/" "$PHPMYADMIN_NGINX_CONF"
+    sed -i "s/server_name [^;]*/server_name $DOMAIN_PHPMYADMIN/" "$PHPMYADMIN_NGINX_CONF"
 
     echo "🔄 Restarting Nginx..."
     sudo nginx -t && sudo systemctl restart nginx
