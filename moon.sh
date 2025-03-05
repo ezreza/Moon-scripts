@@ -29,7 +29,7 @@ sudo apt-get install -y mysql-server
 #COMPOSER
 sudo apt-get install -y composer
 #PhpMyAdmin
-sudo apt-get install -y phpmyadmin
+#sudo apt-get install -y phpmyadmin
 #REDIS
 sudo apt-get install -y redis
 
@@ -95,7 +95,7 @@ fi
 echo "Configuring Nginx..."
 sudo cp /var/www/Moon/nginx/Moon.conf /etc/nginx/sites-available/moon_network
 sudo ln -s /etc/nginx/sites-available/moon_network /etc/nginx/sites-enabled/
-sudo ln -s /usr/share/phpmyadmin /var/www/Moon/public/phpmyadmin
+#sudo ln -s /usr/share/phpmyadmin /var/www/Moon/public/phpmyadmin
 
 # Test and restart Nginx
 echo "Testing Nginx configuration..."
