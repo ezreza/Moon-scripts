@@ -176,6 +176,8 @@ EOF
     unset DB_USER
     unset DB_PASSWORD
 
+    rm -- "$0"
+
 }
 
 remove() {
