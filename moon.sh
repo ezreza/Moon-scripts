@@ -8,7 +8,8 @@ fi
 
 install() {
     # Generate
-    MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
+    #MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
+    MYSQL_ROOT_PASSWORD="EscGOWiCmQaWiWJi"
     DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)
 
     clear
@@ -45,6 +46,8 @@ install() {
     #sudo apt-get install -y phpmyadmin
     #REDIS
     sudo apt-get install -y redis
+    #Supervisor
+    sudo apt-get install -y supervisor
 
     clear
 
@@ -110,7 +113,6 @@ install() {
         echo "Apache is not installed. Skipping removal..."
     fi
 
-
     # Config Nginx
     echo "Configuring Nginx..."
     NGINX_CONF="/etc/nginx/sites-available/moon_network"
@@ -126,7 +128,6 @@ install() {
 
     echo "Restarting Nginx..."
     sudo nginx -t && sudo systemctl restart nginx
-
 
     # MySQL root
     echo "Configuring MySQL root user..."
@@ -158,6 +159,36 @@ EOF
         echo "* * * * * cd /var/www/Moon && php artisan schedule:run >> /dev/null 2>&1"
     ) | crontab -
 
+    # Supervisor service
+    sudo systemctl enable supervisor
+    sudo systemctl start supervisor
+
+    # تنظیم Worker برای Laravel Queue
+    SUPERVISOR_CONF="/etc/supervisor/conf.d/laravel-queue-worker.conf"
+
+    echo "⚙️ Configuring Laravel Queue Worker..."
+
+    sudo bash -c "cat > $SUPERVISOR_CONF" <<EOF
+[program:laravel-queue-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/Moon/artisan queue:work --tries=3 --timeout=90
+autostart=true
+autorestart=true
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/www/Moon/storage/logs/queue-worker.log
+EOF
+
+    # بررسی وجود فایل و اعمال تغییرات در Supervisor
+    if [ -f "$SUPERVISOR_CONF" ]; then
+        echo "✅ Laravel Queue Worker configuration added successfully!"
+        sudo supervisorctl reread
+        sudo supervisorctl update
+        sudo supervisorctl start laravel-queue-worker
+    else
+        echo "❌ Error: Failed to create Supervisor configuration file!"
+    fi
+
     # Node.js 18
     echo "Installing Node.js 18..."
     curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -176,8 +207,7 @@ EOF
     echo " Database User:       $DB_USER"
     echo " Database Password:   $DB_PASSWORD"
     echo "--------------------------------------------"
-    echo ""
-    echo -e "\n🚀 Your application is now accessible at: \e[1;34mhttp://$DOMAIN\e[0m"
+    echo -e "🚀 Your application is now accessible at: \e[1;34mhttp://$DOMAIN\e[0m"
 
     unset MYSQL_ROOT_PASSWORD
     unset MAINDB
