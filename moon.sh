@@ -3,6 +3,8 @@
 # تولید خودکار رمز عبور برای MySQL Root
 MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
 clear
+echo "Moon Network Installation..."
+wait
 # گرفتن ورودی از کاربر برای دیتابیس و کاربر MySQL
 read -p "Enter database name: " MAINDB
 read -p "Enter database username: " DB_USER
