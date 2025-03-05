@@ -24,9 +24,7 @@ echo "Installing required dependencies..."
 # NGINX
 sudo apt-get install -y nginx
 # PHP
-#sudo apt-get install -y php php-cli php-fpm php-mbstring php-xml php-curl php-mysql php-zip php-bcmath
-sudo apt-get install -y php8.2 php8.2-cli php8.2-fpm php8.2-mbstring php8.2-xml php8.2-curl php8.2-mysql php8.2-zip php8.2-bcmath
-
+sudo apt-get install -y php php-cli php-fpm php-mbstring php-xml php-curl php-mysql php-zip php-bcmath
 # Git Zip Curl
 sudo apt-get install -y git unzip curl
 #MYSQL
