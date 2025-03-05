@@ -263,3 +263,4 @@ else
     echo "Usage: $0 {install|remove}"
     exit 1
 fi
+
