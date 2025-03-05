@@ -26,7 +26,7 @@ clear
 # Clone project
 echo "Cloning project from GitHub..."
 cd /var/www
-git clone https://github.com/ezreza/Moon.git
+git clone git@github.com:ezreza/Moon.git
 cd Moon
 echo "Moon Clone"
 wait
