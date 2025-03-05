@@ -7,7 +7,7 @@ clear
 read -p "Enter database name: " MAINDB
 read -p "Enter database username: " DB_USER
 read -sp "Enter database user password: " DB_PASSWORD
-echo ""  # برای رفتن به خط بعدی بعد از دریافت رمز
+echo ""
 
 # Moon Network Install
 echo "Starting Moon Network Installation..."
@@ -19,7 +19,15 @@ sudo apt-get upgrade -y
 
 # Dependencies
 echo "Installing required dependencies..."
-sudo apt-get install -y nginx php php-cli php-fpm php-mbstring php-xml php-curl php-mysql php-zip php-bcmath git unzip curl mysql-server composer redis
+#sudo apt-get install -y nginx php php-cli php-fpm php-mbstring php-xml php-curl php-mysql php-zip php-bcmath git unzip curl mysql-server composer redis
+sudo apt-get install -y software-properties-common
+sudo add-apt-repository -y ppa:ondrej/php
+sudo apt-get update -y
+sudo apt-get install -y php8.2 php8.2-cli php8.2-fpm php8.2-mbstring php8.2-xml php8.2-curl php8.2-mysql php8.2-zip php8.2-bcmath
+
+# نصب سایر وابستگی‌ها
+sudo apt-get install -y nginx git unzip curl mysql-server composer redis
+
 
 clear
 
@@ -123,9 +131,8 @@ echo "NPM version: $(npm -v)"
 npm install
 npm run build
 
+clear
 # نمایش اطلاعات مهم در پایان نصب
-echo "✅ Setup completed successfully!"
-echo ""
 echo "🔑 Your MySQL credentials (SAVE THEM SAFELY!):"
 echo "--------------------------------------------"
 echo " MySQL Root Password: $MYSQL_ROOT_PASSWORD"
@@ -134,4 +141,9 @@ echo " Database User:       $DB_USER"
 echo " Database Password:   $DB_PASSWORD"
 echo "--------------------------------------------"
 echo ""
-echo "🚀 Your Laravel project is installed and ready to use!"
+echo "🚀 Your Moon Network project is installed and ready to use!"
+
+unset MYSQL_ROOT_PASSWORD
+unset MAINDB
+unset DB_USER
+unset DB_PASSWORD
