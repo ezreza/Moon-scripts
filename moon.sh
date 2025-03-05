@@ -231,7 +231,6 @@ phpmyadmin() {
     sudo systemctl restart nginx
     sudo systemctl restart php-fpm
 
-    # بررسی نصب
     if [ -d "/usr/share/phpmyadmin" ]; then
         echo "✅ phpMyAdmin installed successfully!"
     else
@@ -254,7 +253,6 @@ phpmyadmin() {
     sudo nginx -t && sudo systemctl restart nginx
 }
 
-# بررسی ورودی پارامتر
 if [ "$1" == "install" ]; then
     install
 elif [ "$1" == "phpmyadmin" ]; then
