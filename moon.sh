@@ -178,7 +178,6 @@ EOF
 
 }
 
-# تعریف یک تابع برای حذف
 remove() {
     echo "🧹 Removing packages..."
 }
