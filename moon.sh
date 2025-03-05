@@ -40,7 +40,6 @@ install() {
     clear
 
     # Getting user input for MySQL database and user
-    echo "Moon Network Installation..."
     echo -e "${CYAN}Moon Network Installation...${RESET}"
     #read -p "Enter your domain (e.g., example.com): " DOMAIN
 
