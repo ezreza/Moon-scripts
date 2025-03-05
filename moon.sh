@@ -16,6 +16,7 @@ install() {
     # Getting user input for MySQL database and user
     echo "Moon Network Installation..."
     read -p "Enter your domain (e.g., example.com): " DOMAIN
+    read -p "Enter your secure domain (or subdomain) (e.g., sec.example.com): " SECURE_DOMAIN
     read -p "Enter database name: " MAINDB
     read -p "Enter database username: " DB_USER
     read -sp "Enter database user password: " DB_PASSWORD
@@ -198,6 +199,65 @@ EOF
     npm install
     npm run build
 
+    # PhpMyAdmin
+    set -e
+    echo "🔍 Installing phpMyAdmin..."
+
+    export DEBIAN_FRONTEND=noninteractive
+    sudo apt install -y phpmyadmin php-gd php-json
+
+    sudo phpenmod mbstring
+    PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
+    sudo systemctl restart nginx
+    sudo systemctl restart php${PHP_VERSION}-fpm
+
+    if [ -d "/usr/share/phpmyadmin" ]; then
+        echo "✅ phpMyAdmin installed successfully!"
+    else
+        echo "❌ Error: phpMyAdmin installation failed!"
+        exit 1
+    fi
+
+    PHPMYADMIN_NGINX_CONF="/etc/nginx/sites-available/phpmyadmin"
+
+    if [ ! -f "/var/www/Moon/nginx/phpmyadmin.conf" ]; then
+        echo "❌ Error: phpMyAdmin Nginx configuration file not found!"
+        exit 1
+    fi
+
+    sudo cp /var/www/Moon/nginx/phpmyadmin.conf "$PHPMYADMIN_NGINX_CONF"
+    sudo ln -sf "$PHPMYADMIN_NGINX_CONF" /etc/nginx/sites-enabled/
+
+    if [ ! -f "$PHPMYADMIN_NGINX_CONF" ]; then
+        echo "❌ Error: Nginx configuration file not found at $PHPMYADMIN_NGINX_CONF"
+        exit 1
+    fi
+
+    sed -i "s/server_name [^;]*/server_name $SECURE_DOMAIN/" "$PHPMYADMIN_NGINX_CONF"
+
+    echo "🔄 Restarting Nginx..."
+    sudo nginx -t && sudo systemctl restart nginx
+
+    # Certbot
+    echo "🔍 Installing Certbot..."
+    sudo apt install -y certbot python3-certbot-nginx
+    echo "🔒 Requesting SSL certificate..."
+    sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN -d $SECURE_DOMAIN
+
+    if sudo certbot certificates | grep -q "$DOMAIN"; then
+        echo "✅ SSL successfully installed for $DOMAIN and $SECURE_DOMAIN!"
+    else
+        echo "❌ Error: SSL installation failed!"
+        exit 1
+    fi
+
+    echo "🔄 Checking automatic SSL renewal..."
+    sudo certbot renew --dry-run
+
+    echo "✅ SSL setup completed! You can now access your site securely."
+
+    sleep 3
+
     clear
     echo "Your MySQL credentials (SAVE THEM SAFELY!):"
     echo "--------------------------------------------"
@@ -220,7 +280,6 @@ EOF
 remove() {
     echo "🧹 Removing packages..."
 }
-
 
 phpmyadmin() {
     DOMAIN_PHPMYADMIN="myadmin.moooo.tech"
@@ -263,7 +322,6 @@ phpmyadmin() {
     sudo nginx -t && sudo systemctl restart nginx
 }
 
-
 if [ "$1" == "install" ]; then
     install
 elif [ "$1" == "phpmyadmin" ]; then
@@ -274,4 +332,3 @@ else
     echo "Usage: $0 {install|remove}"
     exit 1
 fi
-
