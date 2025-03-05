@@ -33,11 +33,14 @@ sudo apt-get install -y composer
 #REDIS
 sudo apt-get install -y redis
 
+clear
 # Clone
 echo "Cloning project from GitHub..."
 cd /var/www
 git clone https://github.com/ezreza/Moon.git
 cd Moon
+echo "Moon Clone"
+wait
 
 
 # Composer dependencies
