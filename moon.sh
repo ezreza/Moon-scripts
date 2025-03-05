@@ -21,10 +21,6 @@ sudo apt-get upgrade -y
 
 # Dependencies
 echo "Installing required dependencies..."
-#sudo apt-get install -y nginx php php-cli php-fpm php-mbstring php-xml php-curl php-mysql php-zip php-bcmath git unzip curl mysql-server composer redis
-sudo apt-get install -y software-properties-common
-sudo add-apt-repository -y ppa:ondrej/php
-sudo apt-get update -y
 sudo apt-get install -y php8.2 php8.2-fpm php8.2-mysql
 # نصب سایر وابستگی‌ها
 sudo apt-get install -y nginx git unzip curl mysql-server composer redis
