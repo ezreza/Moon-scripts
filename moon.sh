@@ -15,6 +15,7 @@ install() {
 
     # Getting user input for MySQL database and user
     echo "Moon Network Installation..."
+    read -p "Enter your domain (e.g., example.com): " DOMAIN
     read -p "Enter database name: " MAINDB
     read -p "Enter database username: " DB_USER
     read -sp "Enter database user password: " DB_PASSWORD
@@ -109,16 +110,23 @@ install() {
         echo "Apache is not installed. Skipping removal..."
     fi
 
+
     # Config Nginx
     echo "Configuring Nginx..."
-    sudo cp /var/www/Moon/nginx/Moon.conf /etc/nginx/sites-available/moon_network
-    sudo ln -s /etc/nginx/sites-available/moon_network /etc/nginx/sites-enabled/
+    NGINX_CONF="/etc/nginx/sites-available/moon_network"
+    sudo cp /var/www/Moon/nginx/Moon.conf "$NGINX_CONF"
+    sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
 
-    # Test and restart Nginx
-    echo "Testing Nginx configuration..."
-    sudo nginx -t
+    if [ ! -f "$NGINX_CONF" ]; then
+        echo "❌ Error: Nginx configuration file not found at $NGINX_CONF"
+        exit 1
+    fi
+
+    sed -i "s/server_name [^;]*/server_name $DOMAIN/" "$NGINX_CONF"
+
     echo "Restarting Nginx..."
-    sudo systemctl restart nginx
+    sudo nginx -t && sudo systemctl restart nginx
+
 
     # MySQL root
     echo "Configuring MySQL root user..."
@@ -169,7 +177,7 @@ EOF
     echo " Database Password:   $DB_PASSWORD"
     echo "--------------------------------------------"
     echo ""
-    echo "🚀 Your Moon Network project is installed and ready to use!"
+    echo -e "\n🚀 Your application is now accessible at: \e[1;34mhttp://$DOMAIN\e[0m"
 
     unset MYSQL_ROOT_PASSWORD
     unset MAINDB
