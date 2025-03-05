@@ -221,6 +221,7 @@ remove() {
     echo "🧹 Removing packages..."
 }
 
+
 phpmyadmin() {
     echo "🔍 Installing phpMyAdmin..."
 
