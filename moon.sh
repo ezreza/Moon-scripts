@@ -21,19 +21,41 @@ sudo apt-get upgrade -y
 
 # Dependencies
 echo "Installing required dependencies..."
-sudo apt-get install -y php8.2 php8.2-fpm php8.2-mysql
-# نصب سایر وابستگی‌ها
-sudo apt-get install -y nginx git unzip curl mysql-server composer redis
+# NGINX
+sudo apt-get install -y nginx
+# PHP
+#sudo apt-get install -y php php-cli php-fpm php-mbstring php-xml php-curl php-mysql php-zip php-bcmath
+sudo apt-get install -y php8.2 php8.2-cli php8.2-fpm php8.2-mbstring php8.2-xml php8.2-curl php8.2-mysql php8.2-zip php8.2-bcmath
+
+# Git Zip Curl
+sudo apt-get install -y git unzip curl
+#MYSQL
+sudo apt-get install -y mysql-server
+#COMPOSER
+sudo apt-get install -y composer
+#PhpMyAdmin
+#sudo apt-get install -y phpmyadmin
+#REDIS
+sudo apt-get install -y redis
+
 
 
 clear
 
 # Clone project
 echo "Cloning project from GitHub..."
+if [ -d "/var/www/Moon" ]; then
+    echo "🔄 Directory /var/www/Moon exists. Removing it..."
+    rm -rf /var/www/Moon
+    echo "✅ Directory removed."
+else
+    echo "ℹ️ Directory /var/www/Moon does not exist. Skipping removal."
+fi
+
 cd /var/www
 git clone git@github.com:ezreza/Moon.git
 cd Moon
-echo "Moon Clone"
+echo "🚀 Moon Clone Completed!"
 wait
 
 # Composer dependencies
