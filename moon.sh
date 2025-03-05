@@ -41,7 +41,7 @@ install() {
 
     # Getting user input for MySQL database and user
     echo -e "${CYAN}Moon Network Installation...${RESET}"
-    #read -p "Enter your domain (e.g., example.com): " DOMAIN
+    read -p "Enter your domain (e.g., example.com): " DOMAIN
 
     while true; do
         read -p "Enter your secure domain (or subdomain) (e.g., sec.example.com): " SECURE_DOMAIN
