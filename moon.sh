@@ -1,6 +1,10 @@
 #!/bin/bash
 
 # ROOT
+if [ "$(id -u)" != "0" ]; then
+    echo "This script must be run as root" 1>&2
+    exit 1
+fi
 
 install() {
     # Generate
@@ -173,3 +177,18 @@ EOF
     unset DB_PASSWORD
 
 }
+
+# تعریف یک تابع برای حذف
+remove() {
+    echo "🧹 Removing packages..."
+}
+
+# بررسی ورودی پارامتر
+if [ "$1" == "install" ]; then
+    install
+elif [ "$1" == "remove" ]; then
+    remove
+else
+    echo "Usage: $0 {install|remove}"
+    exit 1
+fi
