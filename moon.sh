@@ -46,7 +46,6 @@ install() {
     while true; do
         read -p "Enter your secure domain (or subdomain) (e.g., sec.example.com): " SECURE_DOMAIN
 
-        # Check if DOMAIN and SECURE_DOMAIN are the same
         if ! validate_domain "$DOMAIN" "$SECURE_DOMAIN"; then
             continue
         fi
