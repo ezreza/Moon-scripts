@@ -7,7 +7,6 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 install() {
-    # Generate
     #MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
     MYSQL_ROOT_PASSWORD="EscGOWiCmQaWiWJi"
     DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)
@@ -42,16 +41,13 @@ install() {
     sudo apt-get install -y mysql-server
     #COMPOSER
     sudo apt-get install -y composer
-    #PhpMyAdmin
-    #sudo apt-get install -y phpmyadmin
     #REDIS
     sudo apt-get install -y redis
     #Supervisor
     sudo apt-get install -y supervisor
 
-    clear
-
     # Clone project
+    clear
     echo "Cloning project from GitHub..."
     if [ -d "/var/www/Moon" ]; then
         echo "Directory /var/www/Moon exists. Removing it..."
@@ -73,7 +69,7 @@ install() {
     echo "Configuring environment variables..."
     cp .env.example .env
 
-    # جایگزینی مقادیر جدید در .env
+    # Config .env
     sed -i 's/^# DB_HOST/DB_HOST/' .env
     sed -i 's/^# DB_PORT/DB_PORT/' .env
     sed -i 's/^# DB_DATABASE/DB_DATABASE/' .env
@@ -85,10 +81,9 @@ install() {
     sed -i "s/DB_USERNAME=.*/DB_USERNAME=$DB_USER/" .env
     sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" .env
 
-    # اضافه کردن کلید رمزنگاری به .env
     sed -i "s/^DATA_ENCRYPTION_KEY=.*/DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY/" .env
 
-    # application key
+    # Generating key
     echo "Generating Laravel application key..."
     php artisan key:generate
 
@@ -98,19 +93,26 @@ install() {
     sudo chmod -R 775 /var/www/Moon/storage /var/www/Moon/bootstrap/cache
     php artisan storage:link
 
-    # Stop and remove Apache if installed
-    echo "Checking if Apache is installed..."
+    # remove Apache
+    echo "🔍 Checking if Apache is installed..."
     if dpkg -l | grep -q apache2; then
-        echo "Stopping Apache service..."
+        echo "🛑 Stopping Apache service..."
         sudo systemctl stop apache2
         sudo systemctl disable apache2
-        echo "Removing Apache..."
-        sudo apt-get purge -y apache2 apache2-utils apache2-bin apache2.2-common
+
+        echo "🧹 Removing Apache and related packages..."
+        sudo apt-get purge -y apache2 apache2-utils apache2-bin apache2.2-common apache2-doc apache2-data libapache2-mod-php
+
+        echo "🔄 Cleaning up dependencies..."
         sudo apt-get autoremove -y
+        sudo apt-get autoclean -y
+
+        echo "🗑️ Removing leftover files..."
         sudo rm -rf /etc/apache2 /var/www/html
-        echo "Apache has been completely removed!"
+
+        echo "✅ Apache has been completely removed!"
     else
-        echo "Apache is not installed. Skipping removal..."
+        echo "ℹ️ Apache is not installed. Skipping removal..."
     fi
 
     # Config Nginx
@@ -148,11 +150,11 @@ EOF
 
     echo "Database $MAINDB and user $DB_USER created successfully!"
 
-    # اجرای مهاجرت‌ها
+    # Running migrations
     echo "Running database migrations..."
     php artisan migrate
 
-    # پیکربندی کرون‌جاب برای تسک‌ها (اختیاری)
+    # Setting up Cronjob
     echo "Setting up cron job for Laravel scheduler..."
     (
         crontab -l
@@ -163,10 +165,9 @@ EOF
     sudo systemctl enable supervisor
     sudo systemctl start supervisor
 
-    # تنظیم Worker برای Laravel Queue
+    # Setting Worker for Laravel Queue
     SUPERVISOR_CONF="/etc/supervisor/conf.d/laravel-queue-worker.conf"
-
-    echo "⚙️ Configuring Laravel Queue Worker..."
+    echo "Configuring Laravel Queue Worker..."
 
     sudo bash -c "cat > $SUPERVISOR_CONF" <<EOF
 [program:laravel-queue-worker]
@@ -179,14 +180,13 @@ redirect_stderr=true
 stdout_logfile=/var/www/Moon/storage/logs/queue-worker.log
 EOF
 
-    # بررسی وجود فایل و اعمال تغییرات در Supervisor
     if [ -f "$SUPERVISOR_CONF" ]; then
-        echo "✅ Laravel Queue Worker configuration added successfully!"
+        echo "Laravel Queue Worker configuration added successfully!"
         sudo supervisorctl reread
         sudo supervisorctl update
         sudo supervisorctl start laravel-queue-worker
     else
-        echo "❌ Error: Failed to create Supervisor configuration file!"
+        echo "Error: Failed to create Supervisor configuration file!"
     fi
 
     # Node.js 18
@@ -199,15 +199,14 @@ EOF
     npm run build
 
     clear
-    # نمایش اطلاعات مهم در پایان نصب
-    echo "🔑 Your MySQL credentials (SAVE THEM SAFELY!):"
+    echo "Your MySQL credentials (SAVE THEM SAFELY!):"
     echo "--------------------------------------------"
     echo " MySQL Root Password: $MYSQL_ROOT_PASSWORD"
     echo " Database Name:       $MAINDB"
     echo " Database User:       $DB_USER"
     echo " Database Password:   $DB_PASSWORD"
     echo "--------------------------------------------"
-    echo -e "🚀 Your application is now accessible at: \e[1;34mhttp://$DOMAIN\e[0m"
+    echo -e "Your application is now accessible at: \e[1;34mhttp://$DOMAIN\e[0m"
 
     unset MYSQL_ROOT_PASSWORD
     unset MAINDB
@@ -220,6 +219,39 @@ EOF
 
 remove() {
     echo "🧹 Removing packages..."
+}
+
+phpmyadmin() {
+    echo "🔍 Installing phpMyAdmin..."
+
+    export DEBIAN_FRONTEND=noninteractive
+    sudo apt install -y phpmyadmin php-gd php-json
+
+    sudo phpenmod mbstring
+    sudo systemctl restart nginx
+    sudo systemctl restart php-fpm
+
+    # بررسی نصب
+    if [ -d "/usr/share/phpmyadmin" ]; then
+        echo "✅ phpMyAdmin installed successfully!"
+    else
+        echo "❌ Error: phpMyAdmin installation failed!"
+        exit 1
+    fi
+
+    PHPMYADMIN_NGINX_CONF="/etc/nginx/sites-available/phpmyadmin"
+    sudo cp /var/www/Moon/nginx/phpmyadmin.conf "$PHPMYADMIN_NGINX_CONF"
+    sudo ln -sf "$PHPMYADMIN_NGINX_CONF" /etc/nginx/sites-enabled/
+
+    if [ ! -f "$PHPMYADMIN_NGINX_CONF" ]; then
+        echo "❌ Error: Nginx configuration file not found at $PHPMYADMIN_NGINX_CONF"
+        exit 1
+    fi
+
+    sed -i "s/server_name [^;]*/server_name $DOMAIN/" "$PHPMYADMIN_NGINX_CONF"
+
+    echo "Restarting Nginx..."
+    sudo nginx -t && sudo systemctl restart nginx
 }
 
 # بررسی ورودی پارامتر
