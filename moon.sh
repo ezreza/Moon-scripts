@@ -223,14 +223,16 @@ remove() {
 
 
 phpmyadmin() {
+    set -e
     echo "🔍 Installing phpMyAdmin..."
 
     export DEBIAN_FRONTEND=noninteractive
     sudo apt install -y phpmyadmin php-gd php-json
 
     sudo phpenmod mbstring
+    PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
     sudo systemctl restart nginx
-    sudo systemctl restart php-fpm
+    sudo systemctl restart php${PHP_VERSION}-fpm
 
     if [ -d "/usr/share/phpmyadmin" ]; then
         echo "✅ phpMyAdmin installed successfully!"
@@ -240,6 +242,12 @@ phpmyadmin() {
     fi
 
     PHPMYADMIN_NGINX_CONF="/etc/nginx/sites-available/phpmyadmin"
+
+    if [ ! -f "/var/www/Moon/nginx/phpmyadmin.conf" ]; then
+        echo "❌ Error: phpMyAdmin Nginx configuration file not found!"
+        exit 1
+    fi
+
     sudo cp /var/www/Moon/nginx/phpmyadmin.conf "$PHPMYADMIN_NGINX_CONF"
     sudo ln -sf "$PHPMYADMIN_NGINX_CONF" /etc/nginx/sites-enabled/
 
@@ -250,9 +258,10 @@ phpmyadmin() {
 
     sed -i "s/server_name [^;]*/server_name $DOMAIN/" "$PHPMYADMIN_NGINX_CONF"
 
-    echo "Restarting Nginx..."
+    echo "🔄 Restarting Nginx..."
     sudo nginx -t && sudo systemctl restart nginx
 }
+
 
 if [ "$1" == "install" ]; then
     install
