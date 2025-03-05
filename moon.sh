@@ -6,6 +6,32 @@ if [ "$(id -u)" != "0" ]; then
     exit 1
 fi
 
+# Define color variables
+RED="\e[31m"
+GREEN="\e[32m"
+YELLOW="\e[33m"
+BLUE="\e[34m"
+MAGENTA="\e[35m"
+CYAN="\e[36m"
+RESET="\e[0m"
+
+validate_domain() {
+    if [[ "$1" == "$2" ]]; then
+        echo -e "${RED}❌ Error: DOMAIN and SECURE_DOMAIN must not be the same.${RESET}"
+        return 1
+    fi
+    return 0
+}
+
+# Function to check if input contains spaces
+validate_no_spaces() {
+    if [[ "$1" =~ \  ]]; then
+        echo -e "${RED}❌ Error: $2 should not contain spaces.${RESET}"
+        return 1
+    fi
+    return 0
+}
+
 install() {
     #MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
     MYSQL_ROOT_PASSWORD="EscGOWiCmQaWiWJi"
@@ -15,8 +41,20 @@ install() {
 
     # Getting user input for MySQL database and user
     echo "Moon Network Installation..."
-    read -p "Enter your domain (e.g., example.com): " DOMAIN
-    read -p "Enter your secure domain (or subdomain) (e.g., sec.example.com): " SECURE_DOMAIN
+    echo -e "${CYAN}Moon Network Installation...${RESET}"
+    #read -p "Enter your domain (e.g., example.com): " DOMAIN
+
+    while true; do
+        read -p "Enter your secure domain (or subdomain) (e.g., sec.example.com): " SECURE_DOMAIN
+
+        # Check if DOMAIN and SECURE_DOMAIN are the same
+        if ! validate_domain "$DOMAIN" "$SECURE_DOMAIN"; then
+            continue
+        fi
+        break
+    done
+
+    #read -p "Enter your secure domain (or subdomain) (e.g., sec.example.com): " SECURE_DOMAIN
     read -p "Enter database name: " MAINDB
     read -p "Enter database username: " DB_USER
     read -sp "Enter database user password: " DB_PASSWORD
@@ -254,9 +292,9 @@ EOF
     echo "🔄 Checking automatic SSL renewal..."
     sudo certbot renew --dry-run
 
-    echo "✅ SSL setup completed! You can now access your site securely."
+    echo "✅ SSL setup completed."
 
-    sleep 3
+    sleep 1
 
     clear
     echo "Your MySQL credentials (SAVE THEM SAFELY!):"
@@ -266,7 +304,8 @@ EOF
     echo " Database User:       $DB_USER"
     echo " Database Password:   $DB_PASSWORD"
     echo "--------------------------------------------"
-    echo -e "Your application is now accessible at: \e[1;34mhttp://$DOMAIN\e[0m"
+    echo -e "Application Available at: \e[1;34mhttps://$DOMAIN\e[0m"
+    echo -e "PhpMyAdmin Available at: \e[1;34mhttps://$SECURE_DOMAIN/phpmyadmin\e[0m"
 
     unset MYSQL_ROOT_PASSWORD
     unset MAINDB
@@ -279,47 +318,6 @@ EOF
 
 remove() {
     echo "🧹 Removing packages..."
-}
-
-phpmyadmin() {
-    DOMAIN_PHPMYADMIN="myadmin.moooo.tech"
-    set -e
-    echo "🔍 Installing phpMyAdmin..."
-
-    export DEBIAN_FRONTEND=noninteractive
-    sudo apt install -y phpmyadmin php-gd php-json
-
-    sudo phpenmod mbstring
-    PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
-    sudo systemctl restart nginx
-    sudo systemctl restart php${PHP_VERSION}-fpm
-
-    if [ -d "/usr/share/phpmyadmin" ]; then
-        echo "✅ phpMyAdmin installed successfully!"
-    else
-        echo "❌ Error: phpMyAdmin installation failed!"
-        exit 1
-    fi
-
-    PHPMYADMIN_NGINX_CONF="/etc/nginx/sites-available/phpmyadmin"
-
-    if [ ! -f "/var/www/Moon/nginx/phpmyadmin.conf" ]; then
-        echo "❌ Error: phpMyAdmin Nginx configuration file not found!"
-        exit 1
-    fi
-
-    sudo cp /var/www/Moon/nginx/phpmyadmin.conf "$PHPMYADMIN_NGINX_CONF"
-    sudo ln -sf "$PHPMYADMIN_NGINX_CONF" /etc/nginx/sites-enabled/
-
-    if [ ! -f "$PHPMYADMIN_NGINX_CONF" ]; then
-        echo "❌ Error: Nginx configuration file not found at $PHPMYADMIN_NGINX_CONF"
-        exit 1
-    fi
-
-    sed -i "s/server_name [^;]*/server_name $DOMAIN_PHPMYADMIN/" "$PHPMYADMIN_NGINX_CONF"
-
-    echo "🔄 Restarting Nginx..."
-    sudo nginx -t && sudo systemctl restart nginx
 }
 
 if [ "$1" == "install" ]; then
