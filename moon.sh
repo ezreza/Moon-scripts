@@ -357,10 +357,9 @@ key() {
 
     ssh-keygen -t rsa -b 4096 -C "moon-admin" -f "$SSH_KEY_NAME" -N ""
 
-    echo -e "${GREEN}Public SSH Key (Add this to GitHub):${RESET}"
+    echo -e "${GREEN}Public SSH Key${RESET} ${YELLOW}(Add this to GitHub):${RESET}\n"
     cat "$SSH_KEY_NAME.pub"
-
-    echo -e "${YELLOW}Configuring SSH...${RESET}"
+    echo -e "\n${YELLOW}Configuring SSH...${RESET}"
     echo -e "Host github.com\n\tIdentityFile ~/.ssh/$SSH_KEY_NAME\n" >>~/.ssh/config
 
     chmod 600 ~/.ssh/config
@@ -369,9 +368,6 @@ key() {
 
     echo -e "${YELLOW}Testing SSH connection with GitHub...${RESET}"
     ssh -T git@github.com
-
-    echo -e "${GREEN}SSH setup completed successfully!${RESET}"
-
 }
 
 if [ "$1" == "install" ]; then
