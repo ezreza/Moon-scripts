@@ -343,7 +343,7 @@ remove() {
     echo "Soon..."
 }
 
-KeySSH() {
+key() {
     echo -e "${YELLOW}🚀 Setting up SSH key for GitHub...${RESET}"
 
     read -p "Enter your SSH key name (default: moon-admin): " SSH_KEY_NAME
@@ -376,8 +376,8 @@ KeySSH() {
 
 if [ "$1" == "install" ]; then
     install
-elif [ "$1" == "KeySSH" ]; then
-    KeySSH
+elif [ "$1" == "key" ]; then
+    key
 elif [ "$1" == "remove" ]; then
     remove
 else
