@@ -367,7 +367,7 @@ key() {
     chmod 600 ~/.ssh/"$SSH_KEY_NAME"
     chmod 644 ~/.ssh/"$SSH_KEY_NAME.pub"
 
-    echo -n -e "\n${YELLOW}Have you added the SSH key to GitHub? (Press Enter to confirm, or type 'n' to skip): ${RESET}"
+    echo -n -e "\n${YELLOW}Have you added the SSH key to GitHub? (Press Enter to confirm): ${RESET}"
     read -r CONFIRMATION
     CONFIRMATION=${CONFIRMATION:-y}
 
