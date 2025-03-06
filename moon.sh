@@ -223,7 +223,6 @@ EOF
     php artisan view:cache
     php artisan route:cache
 
-
     clear
 
     # Setting up Cronjob
@@ -339,23 +338,17 @@ EOF
     sleep 0.5
 
     clear
-    echo "${CYAN}Your MySQL credentials (SAVE THEM SAFELY!)${RESET}"
+    echo -e "${CYAN}Your MySQL credentials (SAVE THEM SAFELY!)${RESET}"
     echo "--------------------------------------------"
     echo "MySQL Root Password: $MYSQL_ROOT_PASSWORD"
     echo "Database Name:       $MAINDB"
     echo "Database User:       $DB_USER"
     echo "Database Password:   $DB_PASSWORD"
     echo "--------------------------------------------"
-    echo -e "App :             ${YELLOW}https://$DOMAIN${RESET}"
-    echo -e "PhpMyAdmin :      ${YELLOW}https://$SECURE_DOMAIN/phpmyadmin${RESET}"
-
-    unset MYSQL_ROOT_PASSWORD
-    unset MAINDB
-    unset DB_USER
-    unset DB_PASSWORD
+    echo -e "${YELLOW}https://$DOMAIN${RESET}"
+    echo -e "${YELLOW}https://$SECURE_DOMAIN/phpmyadmin${RESET}"
 
     rm -- "$0"
-
 }
 
 remove() {
