@@ -17,16 +17,15 @@ RESET="\e[0m"
 
 validate_domain() {
     if [[ "$1" == "$2" ]]; then
-        echo -e "${RED}❌ Error: DOMAIN and SECURE_DOMAIN must not be the same.${RESET}"
+        echo -e "${RED}Error: Domin and Secure Domain must not be the same.${RESET}"
         return 1
     fi
     return 0
 }
 
-# Function to check if input contains spaces
 validate_no_spaces() {
     if [[ "$1" =~ \  ]]; then
-        echo -e "${RED}❌ Error: $2 should not contain spaces.${RESET}"
+        echo -e "${RED}Error: $2 should not contain spaces.${RESET}"
         return 1
     fi
     return 0
@@ -52,22 +51,22 @@ install() {
         break
     done
 
-    #read -p "Enter your secure domain (or subdomain) (e.g., sec.example.com): " SECURE_DOMAIN
     read -p "Enter database name: " MAINDB
     read -p "Enter database username: " DB_USER
     read -sp "Enter database user password: " DB_PASSWORD
     echo ""
 
-    # Moon Network Install
-    echo "Starting Moon Network Installation..."
-
     # Update and upgrate system
-    echo "Updating system packages..."
+    echo -e "${CYAN}Updating system packages...${RESET}"
+    sleep 0.5
     sudo apt-get update -y
     sudo apt-get upgrade -y
 
+    clear
+
     # Dependencies
-    echo "Installing required dependencies..."
+    echo -e "${CYAN}Installing required dependencies...${RESET}"
+    sleep 0.5
     # NGINX
     sudo apt-get install -y nginx
     # PHP
@@ -83,9 +82,12 @@ install() {
     #Supervisor
     sudo apt-get install -y supervisor
 
-    # Clone project
     clear
-    echo "Cloning project from GitHub..."
+
+    # Clone project
+    echo -e "${CYAN}Cloning project from GitHub...${RESET}"
+    sleep 0.5
+
     if [ -d "/var/www/Moon" ]; then
         echo "Directory /var/www/Moon exists. Removing it..."
         rm -rf /var/www/Moon
@@ -95,29 +97,29 @@ install() {
     cd /var/www
     git clone git@github.com:ezreza/Moon.git
     cd Moon
-    echo "🚀 Cloned!"
+    echo -e "${YELLOW}Repositories Cloned.${RESET}"
     wait
 
+    clear
+
     # Composer dependencies
-    echo "Installing Laravel dependencies with Composer..."
+    echo -e "${CYAN}Installing Laravel dependencies with Composer...${RESET}"
+    sleep 0.5
+
     composer install --optimize-autoloader --no-dev
 
     # Environment
     echo "Configuring environment variables..."
     cp .env.example .env
-
-    # Config .env
     sed -i 's/^# DB_HOST/DB_HOST/' .env
     sed -i 's/^# DB_PORT/DB_PORT/' .env
     sed -i 's/^# DB_DATABASE/DB_DATABASE/' .env
     sed -i 's/^# DB_USERNAME/DB_USERNAME/' .env
     sed -i 's/^# DB_PASSWORD/DB_PASSWORD/' .env
-
     sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
     sed -i "s/DB_DATABASE=.*/DB_DATABASE=$MAINDB/" .env
     sed -i "s/DB_USERNAME=.*/DB_USERNAME=$DB_USER/" .env
     sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" .env
-
     sed -i "s/^DATA_ENCRYPTION_KEY=.*/DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY/" .env
 
     # Generating key
@@ -130,36 +132,44 @@ install() {
     sudo chmod -R 775 /var/www/Moon/storage /var/www/Moon/bootstrap/cache
     php artisan storage:link
 
+    clear
+
     # remove Apache
-    echo "🔍 Checking if Apache is installed..."
+    echo -e "${CYAN}Checking if Apache is installed...${RESET}"
+    sleep 0.5
+
     if dpkg -l | grep -q apache2; then
-        echo "🛑 Stopping Apache service..."
+        echo "Stopping Apache service..."
         sudo systemctl stop apache2
         sudo systemctl disable apache2
 
-        echo "🧹 Removing Apache and related packages..."
+        echo "Removing Apache and related packages..."
         sudo apt-get purge -y apache2 apache2-utils apache2-bin apache2.2-common apache2-doc apache2-data libapache2-mod-php
 
-        echo "🔄 Cleaning up dependencies..."
+        echo "Cleaning up dependencies..."
         sudo apt-get autoremove -y
         sudo apt-get autoclean -y
 
-        echo "🗑️ Removing leftover files..."
+        echo "Removing leftover files..."
         sudo rm -rf /etc/apache2 /var/www/html
 
-        echo "✅ Apache has been completely removed!"
+        echo "Apache has been completely removed!"
     else
-        echo "ℹ️ Apache is not installed. Skipping removal..."
+        echo "Apache is not installed. Skipping removal..."
     fi
 
+    clear
+
     # Config Nginx
-    echo "Configuring Nginx..."
+    echo -e "${CYAN}Configuring Nginx...${RESET}"
+    sleep 0.5
+
     NGINX_CONF="/etc/nginx/sites-available/moon_network"
     sudo cp /var/www/Moon/nginx/Moon.conf "$NGINX_CONF"
     sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
 
     if [ ! -f "$NGINX_CONF" ]; then
-        echo "❌ Error: Nginx configuration file not found at $NGINX_CONF"
+        echo -e "${RED}Error: Nginx configuration file not found at $NGINX_CONF${RESET}"
         exit 1
     fi
 
@@ -168,31 +178,41 @@ install() {
     echo "Restarting Nginx..."
     sudo nginx -t && sudo systemctl restart nginx
 
+    clear
+
     # MySQL root
-    echo "Configuring MySQL root user..."
+    echo -e "${CYAN}Configuring MySQL root user...${RESET}"
+    sleep 0.5
+
     sudo mysql -u root <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';
 FLUSH PRIVILEGES;
 EOF
-    echo "Root user configured!"
+    echo -e "${YELLOW}Root user configured!${RESET}"
 
     # MySQL Config
-    echo "Creating MySQL database and user..."
+    echo -e "${CYAN}Creating MySQL database and user...${RESET}"
     mysql -uroot -p"$MYSQL_ROOT_PASSWORD" <<EOF
 CREATE DATABASE IF NOT EXISTS $MAINDB;
 CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
 GRANT ALL PRIVILEGES ON $MAINDB.* TO '$DB_USER'@'localhost';
 FLUSH PRIVILEGES;
 EOF
+    echo -e "${YELLOW}Database $MAINDB and user $DB_USER created successfully!${RESET}"
 
-    echo "Database $MAINDB and user $DB_USER created successfully!"
+    clear
 
     # Running migrations
-    echo "Running database migrations..."
+    echo -e "${CYAN}Running database migrations...${RESET}"
+    sleep 0.5
     php artisan migrate
 
+    clear
+
     # Setting up Cronjob
-    echo "Setting up cron job for Laravel scheduler..."
+    echo -e "${CYAN}Setting up Cronjob and supervisor...${RESET}"
+    sleep 0.5
+
     (
         crontab -l
         echo "* * * * * cd /var/www/Moon && php artisan schedule:run >> /dev/null 2>&1"
@@ -227,17 +247,19 @@ EOF
     fi
 
     # Node.js 18
-    echo "Installing Node.js 18..."
+    echo -e "${CYAN}Installing Node.js 18...${RESET}"
+    sleep 0.5
     curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
     sudo apt-get install -y nodejs
-    echo "Node.js version: $(node -v)"
-    echo "NPM version: $(npm -v)"
     npm install
     npm run build
 
+    clear
+
     # PhpMyAdmin
     set -e
-    echo "🔍 Installing phpMyAdmin..."
+    echo -e "${CYAN}Installing phpMyAdmin...${RESET}"
+    sleep 0.5
 
     export DEBIAN_FRONTEND=noninteractive
     sudo apt install -y phpmyadmin php-gd php-json
@@ -271,28 +293,31 @@ EOF
 
     sed -i "s/server_name [^;]*/server_name $SECURE_DOMAIN/" "$PHPMYADMIN_NGINX_CONF"
 
-    echo "🔄 Restarting Nginx..."
+    echo -e "${YELLOW}Installing phpMyAdmin...${RESET}"
     sudo nginx -t && sudo systemctl restart nginx
 
+    clear
+
     # Certbot
-    echo "🔍 Installing Certbot..."
+    echo -e "${CYAN}Installing Certbot...${RESET}"
+    sleep 0.5
+
     sudo apt install -y certbot python3-certbot-nginx
-    echo "🔒 Requesting SSL certificate..."
+    echo "Requesting SSL certificate..."
     sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN -d $SECURE_DOMAIN
 
     if sudo certbot certificates | grep -q "$DOMAIN"; then
-        echo "✅ SSL successfully installed for $DOMAIN and $SECURE_DOMAIN!"
+        echo -e "${YELLOW}SSL successfully installed for $DOMAIN and $SECURE_DOMAIN!${RESET}"
     else
-        echo "❌ Error: SSL installation failed!"
+        echo -e "${RED}Error: SSL installation failed!${RESET}"
         exit 1
     fi
 
-    echo "🔄 Checking automatic SSL renewal..."
+    echo "Checking automatic SSL renewal..."
     sudo certbot renew --dry-run
+    echo -e "${YELLOW}SSL setup completed!${RESET}"
 
-    echo "✅ SSL setup completed."
-
-    sleep 1
+    sleep 0.5
 
     clear
     echo "Your MySQL credentials (SAVE THEM SAFELY!):"
@@ -302,8 +327,8 @@ EOF
     echo " Database User:       $DB_USER"
     echo " Database Password:   $DB_PASSWORD"
     echo "--------------------------------------------"
-    echo -e "Application Available at: \e[1;34mhttps://$DOMAIN\e[0m"
-    echo -e "PhpMyAdmin Available at: \e[1;34mhttps://$SECURE_DOMAIN/phpmyadmin\e[0m"
+    echo -e "Application Available at: ${CYAN}https://$DOMAIN${RESET}"
+    echo -e "PhpMyAdmin Available at: ${CYAN}https://$SECURE_DOMAIN/phpmyadmin${RESET}"
 
     unset MYSQL_ROOT_PASSWORD
     unset MAINDB
@@ -315,13 +340,42 @@ EOF
 }
 
 remove() {
-    echo "🧹 Removing packages..."
+    echo "Soon..."
+}
+
+KeySSH() {
+    echo -e "${YELLOW}🚀 Setting up SSH key for GitHub...${RESET}"
+
+    read -p "Enter your SSH key name (default: moon-admin): " SSH_KEY_NAME
+    SSH_KEY_NAME=${SSH_KEY_NAME:-moon-admin}
+
+    mkdir -p ~/.ssh
+    cd ~/.ssh || {
+        echo "❌ Failed to access ~/.ssh directory"
+        exit 1
+    }
+
+    ssh-keygen -t rsa -b 4096 -C "moon-admin" -f "$SSH_KEY_NAME" -N ""
+
+    echo -e "${GREEN}Public SSH Key (Add this to GitHub):${RESET}"
+    cat "$SSH_KEY_NAME.pub"
+
+    echo -e "${YELLOW}Configuring SSH...${RESET}"
+    echo -e "Host github.com\n\tIdentityFile ~/.ssh/$SSH_KEY_NAME\n" >>~/.ssh/config
+
+    chmod 600 ~/.ssh/config
+    chmod 600 ~/.ssh/"$SSH_KEY_NAME"
+    chmod 644 ~/.ssh/"$SSH_KEY_NAME.pub"
+
+    echo -e "${YELLOW}Testing SSH connection with GitHub...${RESET}"
+    ssh -T git@github.com
+
+    echo -e "${GREEN}SSH setup completed successfully!${RESET}"
+
 }
 
 if [ "$1" == "install" ]; then
     install
-elif [ "$1" == "phpmyadmin" ]; then
-    phpmyadmin
 elif [ "$1" == "remove" ]; then
     remove
 else
