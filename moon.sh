@@ -51,10 +51,18 @@ install() {
         break
     done
 
-    read -p "Enter database name: " MAINDB
-    read -p "Enter database username: " DB_USER
-    read -sp "Enter database user password: " DB_PASSWORD
+    read -p "Enter database name (default: moon_db): " MAINDB
+    MAINDB=${MAINDB:-moon_db}
+
+    read -p "Enter database username (default: moon_user): " DB_USER
+    DB_USER=${DB_USER:-moon_user}
+
+    read -sp "Enter database user password (leave empty to generate one): " DB_PASSWORD
     echo ""
+
+    if [[ -z "$DB_PASSWORD" ]]; then
+        DB_PASSWORD=$(openssl rand -base64 12)
+    fi
 
     # Update and upgrate system
     echo -e "${CYAN}Updating system packages...${RESET}"
@@ -207,6 +215,15 @@ EOF
     sleep 0.5
     php artisan migrate
 
+    sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/' .env
+    sed -i 's/^APP_ENV=.*/APP_ENV=production/' .env
+
+    php artisan config:clear
+    php artisan config:cache
+    php artisan view:cache
+    php artisan route:cache
+
+
     clear
 
     # Setting up Cronjob
@@ -245,6 +262,8 @@ EOF
     else
         echo "Error: Failed to create Supervisor configuration file!"
     fi
+
+    clear
 
     # Node.js 18
     echo -e "${CYAN}Installing Node.js 18...${RESET}"
@@ -320,15 +339,15 @@ EOF
     sleep 0.5
 
     clear
-    echo "Your MySQL credentials (SAVE THEM SAFELY!):"
+    echo "${CYAN}Your MySQL credentials (SAVE THEM SAFELY!)${RESET}"
     echo "--------------------------------------------"
-    echo " MySQL Root Password: $MYSQL_ROOT_PASSWORD"
-    echo " Database Name:       $MAINDB"
-    echo " Database User:       $DB_USER"
-    echo " Database Password:   $DB_PASSWORD"
+    echo "MySQL Root Password: $MYSQL_ROOT_PASSWORD"
+    echo "Database Name:       $MAINDB"
+    echo "Database User:       $DB_USER"
+    echo "Database Password:   $DB_PASSWORD"
     echo "--------------------------------------------"
-    echo -e "Application Available at: ${CYAN}https://$DOMAIN${RESET}"
-    echo -e "PhpMyAdmin Available at: ${CYAN}https://$SECURE_DOMAIN/phpmyadmin${RESET}"
+    echo -e "App :             ${YELLOW}https://$DOMAIN${RESET}"
+    echo -e "PhpMyAdmin :      ${YELLOW}https://$SECURE_DOMAIN/phpmyadmin${RESET}"
 
     unset MYSQL_ROOT_PASSWORD
     unset MAINDB
@@ -378,7 +397,6 @@ key() {
     else
         echo -e "${RED}SSH key not added to GitHub. Skipping test.${RESET}"
     fi
-
 }
 
 if [ "$1" == "install" ]; then
@@ -388,6 +406,6 @@ elif [ "$1" == "key" ]; then
 elif [ "$1" == "remove" ]; then
     remove
 else
-    echo "Usage: $0 {install|remove}"
+    echo "Usage: $0 {install|key|remove}"
     exit 1
 fi
