@@ -344,14 +344,15 @@ remove() {
 }
 
 key() {
-    echo -e "${YELLOW}🚀 Setting up SSH key for GitHub...${RESET}"
+    echo -e "${CYAN}Setting up SSH key for GitHub...${RESET}"
 
     read -p "Enter your SSH key name (default: moon-admin): " SSH_KEY_NAME
     SSH_KEY_NAME=${SSH_KEY_NAME:-moon-admin}
 
     mkdir -p ~/.ssh
     cd ~/.ssh || {
-        echo "❌ Failed to access ~/.ssh directory"
+        echo -e "${RED}Failed to access ~/.ssh directory.${RESET}"
+
         exit 1
     }
 
@@ -366,8 +367,14 @@ key() {
     chmod 600 ~/.ssh/"$SSH_KEY_NAME"
     chmod 644 ~/.ssh/"$SSH_KEY_NAME.pub"
 
-    echo -e "${YELLOW}Testing SSH connection with GitHub...${RESET}"
-    ssh -T git@github.com
+    echo -e "${CYAN}Have you added the SSH key to GitHub? (y/n)${RESET}"
+    read -r CONFIRMATION
+    if [[ "$CONFIRMATION" =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}Testing SSH connection with GitHub...${RESET}"
+        ssh -T git@github.com
+    else
+        echo -e "${RED}SSH key not added to GitHub. Skipping test.${RESET}"
+    fi
 }
 
 if [ "$1" == "install" ]; then
