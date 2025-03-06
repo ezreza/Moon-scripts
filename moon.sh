@@ -376,6 +376,8 @@ KeySSH() {
 
 if [ "$1" == "install" ]; then
     install
+elif [ "$1" == "KeySSH" ]; then
+    KeySSH
 elif [ "$1" == "remove" ]; then
     remove
 else
