@@ -319,22 +319,30 @@ EOF
 
     clear
 
-    # Certbot
+    # Cretbot
     echo -e "${CYAN}Installing Certbot...${RESET}"
     sleep 0.5
 
-    sudo apt install -y certbot python3-certbot-nginx
-    echo "Requesting SSL certificate..."
-    sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN -d $SECURE_DOMAIN
-
     if sudo certbot certificates | grep -q "$DOMAIN"; then
-        echo -e "${YELLOW}SSL successfully installed for $DOMAIN and $SECURE_DOMAIN!${RESET}"
+        echo -e "${GREEN}SSL certificate already exists for $DOMAIN. Skipping installation.${RESET}"
     else
-        echo -e "${RED}Error: SSL installation failed!${RESET}"
-        exit 1
+        echo -e "${CYAN}Installing Certbot...${RESET}"
+        sleep 0.5
+
+        sudo apt install -y certbot python3-certbot-nginx
+        echo "Requesting SSL certificate..."
+        sudo certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" -d "$SECURE_DOMAIN"
+
+        if sudo certbot certificates | grep -q "$DOMAIN"; then
+            echo -e "${YELLOW}✅ SSL successfully installed for $DOMAIN and $SECURE_DOMAIN!${RESET}"
+        else
+            echo -e "${RED}❌ Error: SSL installation failed!${RESET}"
+            exit 1
+        fi
     fi
 
-    echo "Checking automatic SSL renewal..."
+    # Checking automatic SSL renewal
+    echo "🔄 Checking automatic SSL renewal..."
     sudo certbot renew --dry-run
     echo -e "${YELLOW}SSL setup completed!${RESET}"
 
