@@ -339,12 +339,12 @@ EOF
             echo -e "${RED}❌ Error: SSL installation failed!${RESET}"
             exit 1
         fi
-    fi
 
-    # Checking automatic SSL renewal
-    echo "🔄 Checking automatic SSL renewal..."
-    sudo certbot renew --dry-run
-    echo -e "${YELLOW}SSL setup completed!${RESET}"
+        # Checking automatic SSL renewal after installation
+        echo "🔄 Checking automatic SSL renewal..."
+        sudo certbot renew --dry-run
+        echo -e "${YELLOW}SSL setup and renewal check completed!${RESET}"
+    fi
 
     sleep 0.5
 
