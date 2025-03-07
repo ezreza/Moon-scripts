@@ -215,6 +215,9 @@ EOF
     sleep 0.5
     php artisan migrate
 
+    sudo mv /var/www/Moon/cli/moon /usr/local/bin/moon
+    sudo chmod +x /usr/local/bin/moon
+
     sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/' .env
     sed -i 's/^APP_ENV=.*/APP_ENV=production/' .env
 
