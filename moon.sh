@@ -41,7 +41,7 @@ install() {
     clear
 
     # Getting user input for MySQL database and user
-    echo -e "${CYAN}Moon Network Installation...${RESET}"
+    echo -e "${YELLOW}Moon Network Installation...${RESET}"
     read -p "Enter app name (default: Moon): " APPNAME
     APPNAME=${APPNAME:-Moon}
     read -p "Enter your domain (e.g., example.com): " DOMAIN
@@ -128,16 +128,15 @@ install() {
     # Clone project
     echo -e "${CYAN}Cloning project from GitHub...${RESET}"
     sleep 0.5
+    cd /var/www
 
     # چک کردن اینکه آیا دایرکتوری /var/www/Moon وجود دارد یا خیر
     if [ ! -d "/var/www/Moon" ]; then
         echo "Directory /var/www/Moon does not exist. Cloning the project..."
-        cd /var/www
         git clone git@github.com:ezreza/Moon.git
         cd Moon
         echo -e "${YELLOW}Repositories Cloned.${RESET}"
     else
-        cd Moon
         echo "Directory /var/www/Moon already exists. Skipping cloning."
     fi
 
