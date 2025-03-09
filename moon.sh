@@ -41,7 +41,7 @@ install() {
     clear
 
     # Getting user input for MySQL database and user
-    echo -e "${RED}Moon Network Installation...${RESET}"
+    echo -e "${CYAN}Moon Network Installation...${RESET}"
     read -p "Enter app name (default: Moon): " APPNAME
     APPNAME=${APPNAME:-Moon}
     read -p "Enter your domain (e.g., example.com): " DOMAIN
@@ -370,7 +370,7 @@ EOF
 
         sudo apt install -y certbot python3-certbot-nginx
         echo "Requesting SSL certificate..."
-        sudo certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" -d "$SECURE_DOMAIN"
+        sudo certbot --nginx -d "$DOMAIN" -d "$SECURE_DOMAIN"
         sed -i "s|^APP_URL=.*|APP_URL=https://$DOMAIN|" .env
         sed -i "s|listen 443 ssl;|listen 443 ssl http2;|" "$NGINX_CONF"
 
