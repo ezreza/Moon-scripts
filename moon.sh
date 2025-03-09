@@ -40,7 +40,7 @@ install() {
     clear
 
     # Getting user input for MySQL database and user
-    echo -e "${CYAN}Moon Network Installation...${RESET}"
+    echo -e "${RED}Moon Network Installation...${RESET}"
     read -p "Enter app name (default: Moon): " APPNAME
     APPNAME=${APPNAME:-Moon}
     read -p "Enter your domain (e.g., example.com): " DOMAIN
@@ -72,6 +72,32 @@ install() {
     sleep 0.5
     sudo apt-get update -y
     sudo apt-get upgrade -y
+
+    clear
+
+    # remove Apache
+    echo -e "${CYAN}Checking if Apache is installed...${RESET}"
+    sleep 0.5
+
+    if dpkg -l | grep -q apache2; then
+        echo "Stopping Apache service..."
+        sudo systemctl stop apache2
+        sudo systemctl disable apache2
+
+        echo "Removing Apache and related packages..."
+        sudo apt-get purge -y apache2 apache2-utils apache2-bin apache2.2-common apache2-doc apache2-data libapache2-mod-php
+
+        echo "Cleaning up dependencies..."
+        sudo apt-get autoremove -y
+        sudo apt-get autoclean -y
+
+        echo "Removing leftover files..."
+        sudo rm -rf /etc/apache2 /var/www/html
+
+        echo "Apache has been completely removed!"
+    else
+        echo "Apache is not installed. Skipping removal..."
+    fi
 
     clear
 
@@ -147,49 +173,35 @@ install() {
 
     clear
 
-    # remove Apache
-    echo -e "${CYAN}Checking if Apache is installed...${RESET}"
-    sleep 0.5
-
-    if dpkg -l | grep -q apache2; then
-        echo "Stopping Apache service..."
-        sudo systemctl stop apache2
-        sudo systemctl disable apache2
-
-        echo "Removing Apache and related packages..."
-        sudo apt-get purge -y apache2 apache2-utils apache2-bin apache2.2-common apache2-doc apache2-data libapache2-mod-php
-
-        echo "Cleaning up dependencies..."
-        sudo apt-get autoremove -y
-        sudo apt-get autoclean -y
-
-        echo "Removing leftover files..."
-        sudo rm -rf /etc/apache2 /var/www/html
-
-        echo "Apache has been completely removed!"
-    else
-        echo "Apache is not installed. Skipping removal..."
-    fi
-
-    clear
-
     # Config Nginx
-    echo -e "${CYAN}Configuring Nginx...${RESET}"
-    sleep 0.5
-
     NGINX_CONF="/etc/nginx/sites-available/moon_network"
-    sudo cp /var/www/Moon/nginx/Moon.conf "$NGINX_CONF"
-    sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
 
-    if [ ! -f "$NGINX_CONF" ]; then
-        echo -e "${RED}Error: Nginx configuration file not found at $NGINX_CONF${RESET}"
-        exit 1
+    if [ -f "$NGINX_CONF" ]; then
+        echo "Configuring Nginx with new server name..."
+
+        sed -i "s/server_name [^;]*/server_name $DOMAIN/" "$NGINX_CONF"
+        sudo nginx -t && sudo systemctl restart nginx
+    else
+        echo -e "${CYAN}Configuring Nginx...${RESET}"
+        sleep 0.5
+
+        # Copy the new configuration file
+        sudo cp /var/www/Moon/nginx/Moon.conf "$NGINX_CONF"
+        sudo ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
+
+        # Check if the Nginx config file now exists
+        if [ ! -f "$NGINX_CONF" ]; then
+            echo -e "${RED}Error: Nginx configuration file not found at $NGINX_CONF${RESET}"
+            exit 1
+        fi
+
+        # Update server_name in the Nginx configuration file
+        sed -i "s/server_name [^;]*/server_name $DOMAIN/" "$NGINX_CONF"
+
+        # Restart Nginx
+        echo "Restarting Nginx..."
+        sudo nginx -t && sudo systemctl restart nginx
     fi
-
-    sed -i "s/server_name [^;]*/server_name $DOMAIN/" "$NGINX_CONF"
-
-    echo "Restarting Nginx..."
-    sudo nginx -t && sudo systemctl restart nginx
 
     clear
 
@@ -302,25 +314,30 @@ EOF
         exit 1
     fi
 
+    # Set phpMyAdmin Nginx configuration file path
     PHPMYADMIN_NGINX_CONF="/etc/nginx/sites-available/phpmyadmin"
 
-    if [ ! -f "/var/www/Moon/nginx/phpmyadmin.conf" ]; then
-        echo "❌ Error: phpMyAdmin Nginx configuration file not found!"
-        exit 1
+    if [ -f "$PHPMYADMIN_NGINX_CONF" ]; then
+         echo "Configuring Nginx PhpMyAdmin with new server name..."
+        sed -i "s/server_name [^;]*/server_name $SECURE_DOMAIN/" "$PHPMYADMIN_NGINX_CONF"
+        sudo nginx -t && sudo systemctl restart nginx
+    else
+        echo -e "${CYAN}Configuring phpMyAdmin Nginx...${RESET}"
+        sleep 0.5
+
+        sudo cp /var/www/Moon/nginx/phpmyadmin.conf "$PHPMYADMIN_NGINX_CONF"
+        sudo ln -sf "$PHPMYADMIN_NGINX_CONF" /etc/nginx/sites-enabled/
+
+        if [ ! -f "$PHPMYADMIN_NGINX_CONF" ]; then
+            echo -e "${RED}Error: Nginx configuration file not found at $PHPMYADMIN_NGINX_CONF${RESET}"
+            exit 1
+        fi
+
+        sed -i "s/server_name [^;]*/server_name $SECURE_DOMAIN/" "$PHPMYADMIN_NGINX_CONF"
+
+        echo -e "${YELLOW}Installing phpMyAdmin...${RESET}"
+        sudo nginx -t && sudo systemctl restart nginx
     fi
-
-    sudo cp /var/www/Moon/nginx/phpmyadmin.conf "$PHPMYADMIN_NGINX_CONF"
-    sudo ln -sf "$PHPMYADMIN_NGINX_CONF" /etc/nginx/sites-enabled/
-
-    if [ ! -f "$PHPMYADMIN_NGINX_CONF" ]; then
-        echo "❌ Error: Nginx configuration file not found at $PHPMYADMIN_NGINX_CONF"
-        exit 1
-    fi
-
-    sed -i "s/server_name [^;]*/server_name $SECURE_DOMAIN/" "$PHPMYADMIN_NGINX_CONF"
-
-    echo -e "${YELLOW}Installing phpMyAdmin...${RESET}"
-    sudo nginx -t && sudo systemctl restart nginx
 
     clear
 
