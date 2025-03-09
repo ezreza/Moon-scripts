@@ -32,7 +32,10 @@ validate_no_spaces() {
 }
 
 install() {
+    ENV_FILE="/var/www/Moon/.env"
+
     MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
+
     #MYSQL_ROOT_PASSWORD="EscGOWiCmQaWiWJi"
     DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)
     MARZBAN_WEBHOOK_SECRET=$(openssl rand -base64 32)
@@ -40,7 +43,7 @@ install() {
     clear
 
     # Getting user input for MySQL database and user
-    echo -e "${RED}Moon Network Installation...${RESET}"
+    echo -e "${CYAN}Moon Network Installation...${RESET}"
     read -p "Enter app name (default: Moon): " APPNAME
     APPNAME=${APPNAME:-Moon}
     read -p "Enter your domain (e.g., example.com): " DOMAIN
@@ -160,19 +163,21 @@ install() {
     sed -i "s|^APP_NAME=.*|APP_NAME=$APPNAME|" .env
     sed -i "s|^DATA_ENCRYPTION_KEY=.*|DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY|" .env
     sed -i "s|^MARZBAN_WEBHOOK_SECRET=.*|MARZBAN_WEBHOOK_SECRET=$MARZBAN_WEBHOOK_SECRET|" .env
+    #echo -e "\n\n# Database configuration\nMYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >>.env
 
-    ENV_MYSQL_ROOT_PASSWORD=$(grep -E '^MYSQL_ROOT_PASSWORD=' .env | cut -d '=' -f2)
-
-    if [ -z "$ENV_MYSQL_ROOT_PASSWORD" ]; then
-        echo -e "\n# Database configuration\nMYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >>.env
-        echo "💡 MYSQL_ROOT_PASSWORD added to .env file."
-
-        sleep 3
+    if grep -q "^MYSQL_ROOT_PASSWORD=" "$ENV_FILE"; then
+        # اگر متغیر وجود داشت، مقدارش رو از .env بگیریم و به متغیر shell نسبت بدیم
+        echo "✅ MYSQL_ROOT_PASSWORD found in .env. Setting shell variable to the value in .env..."
+        MYSQL_ROOT_PASSWORD=$(grep -E '^MYSQL_ROOT_PASSWORD=' "$ENV_FILE" | cut -d '=' -f2)
     else
-        echo "✅ MYSQL_ROOT_PASSWORD is already set in the .env file."
-
-        sleep 3
+        # اگر متغیر وجود نداشت، به انتهای فایل .env اضافه کن
+        echo -e "\n# Database configuration\nMYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >>"$ENV_FILE"
+        echo "💡 MYSQL_ROOT_PASSWORD added to .env file."
     fi
+
+    # چاپ متغیر MYSQL_ROOT_PASSWORD برای تایید
+    echo "MYSQL_ROOT_PASSWORD is now set to: $MYSQL_ROOT_PASSWORD"
+    sleep 3
 
     # Generating key
     echo "Generating Laravel application key..."
@@ -222,20 +227,20 @@ install() {
     echo -e "${CYAN}Configuring MySQL root user...${RESET}"
     sleep 0.5
 
-    sudo mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$ENV_MYSQL_ROOT_PASSWORD'; FLUSH PRIVILEGES;"
-
+    sudo mysql -u root <<EOF
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';
+FLUSH PRIVILEGES;
+EOF
     echo -e "${YELLOW}Root user configured!${RESET}"
-
-    sleep 3
 
     # MySQL Config
     echo -e "${CYAN}Creating MySQL database and user...${RESET}"
-    mysql -uroot -p"$ENV_MYSQL_ROOT_PASSWORD" -e "
+    mysql -uroot -p"$MYSQL_ROOT_PASSWORD" <<EOF
 CREATE DATABASE IF NOT EXISTS $MAINDB;
 CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
 GRANT ALL PRIVILEGES ON $MAINDB.* TO '$DB_USER'@'localhost';
 FLUSH PRIVILEGES;
-"
+EOF
     echo -e "${YELLOW}Database $MAINDB and user $DB_USER created successfully!${RESET}"
 
     clear
