@@ -65,7 +65,7 @@ install() {
     echo ""
 
     if [[ -z "$DB_PASSWORD" ]]; then
-        DB_PASSWORD=$(openssl rand -base64 12)
+        DB_PASSWORD=$(tr </dev/urandom -dc 'A-Za-z0-9' | head -c 12)
     fi
 
     clear
