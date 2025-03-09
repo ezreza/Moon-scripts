@@ -40,7 +40,7 @@ install() {
     clear
 
     # Getting user input for MySQL database and user
-    echo -e "${RED}Moon Network Installation...${RESET}"
+    echo -e "${CYAN}Moon Network Installation...${RESET}"
     read -p "Enter app name (default: Moon): " APPNAME
     APPNAME=${APPNAME:-Moon}
     read -p "Enter your domain (e.g., example.com): " DOMAIN
@@ -160,9 +160,19 @@ install() {
     sed -i "s|^APP_NAME=.*|APP_NAME=$APPNAME|" .env
     sed -i "s|^DATA_ENCRYPTION_KEY=.*|DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY|" .env
     sed -i "s|^MARZBAN_WEBHOOK_SECRET=.*|MARZBAN_WEBHOOK_SECRET=$MARZBAN_WEBHOOK_SECRET|" .env
-    echo -e "\n# Database configuration\nMYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> .env
 
     ENV_MYSQL_ROOT_PASSWORD=$(grep -E '^MYSQL_ROOT_PASSWORD=' .env | cut -d '=' -f2)
+
+    if [ -z "$ENV_MYSQL_ROOT_PASSWORD" ]; then
+        echo -e "\n# Database configuration\nMYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >>.env
+        echo "💡 MYSQL_ROOT_PASSWORD added to .env file."
+
+        sleep 3
+    else
+        echo "✅ MYSQL_ROOT_PASSWORD is already set in the .env file."
+
+        sleep 3
+    fi
 
     # Generating key
     echo "Generating Laravel application key..."
@@ -321,7 +331,7 @@ EOF
     PHPMYADMIN_NGINX_CONF="/etc/nginx/sites-available/phpmyadmin"
 
     if [ -f "$PHPMYADMIN_NGINX_CONF" ]; then
-         echo "Configuring Nginx PhpMyAdmin with new server name..."
+        echo "Configuring Nginx PhpMyAdmin with new server name..."
         sed -i "s/server_name [^;]*/server_name $SECURE_DOMAIN/" "$PHPMYADMIN_NGINX_CONF"
         sudo nginx -t && sudo systemctl restart nginx
     else
