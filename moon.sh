@@ -140,7 +140,6 @@ install() {
         cd Moon
         echo "Directory /var/www/Moon already exists. Skipping cloning."
     fi
-    
 
     clear
 
@@ -407,7 +406,7 @@ EOF
 
 remove() {
     clear
-    echo -e "${RED}Remove Moon !!!!!!!!${RESET}"
+    echo -e "${RED}Remove Moon !?${RESET}"
     read -p "Are you sure you want to remove MySQL and the Moon directory? This action cannot be undone (y/n): " confirm
 
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
@@ -426,6 +425,17 @@ remove() {
         echo "Removing MySQL configuration and data directories..."
         sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql /var/log/mysql.*
 
+        # Remove MySQL user and group if they exist
+        sudo deluser mysql
+        sudo delgroup mysql
+
+        # Ensure no leftover MySQL files or sockets
+        echo "Removing leftover MySQL files and sockets..."
+        sudo rm -rf /var/run/mysqld
+        sudo rm -rf /var/lib/mysql*
+        sudo rm -rf /etc/mysql*
+        sudo rm -rf /var/log/mysql*
+
         # Remove Moon directory if it exists
         if [ -d "/var/www/Moon" ]; then
             echo "Directory /var/www/Moon exists. Removing it..."
@@ -435,17 +445,19 @@ remove() {
             echo "Directory /var/www/Moon does not exist. Skipping removal."
         fi
 
-        # Remove MySQL user and group if they exist
-        sudo deluser mysql
-        sudo delgroup mysql
+        # Recheck if MySQL was completely removed
+        echo "Rechecking MySQL installation..."
+        if dpkg -l | grep -q mysql; then
+            echo "MySQL is still installed. Please remove it manually."
+        else
+            echo "MySQL has been successfully removed."
+        fi
 
         echo "Removal process completed."
     else
         echo "Operation canceled. Nothing was removed."
     fi
 }
-
-
 
 key() {
     clear
