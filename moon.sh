@@ -40,7 +40,7 @@ install() {
     clear
 
     # Getting user input for MySQL database and user
-    echo -e "${CYAN}Moon Network Installation...${RESET}"
+    echo -e "${RED}Moon Network Installation...${RESET}"
     read -p "Enter app name (default: Moon): " APPNAME
     APPNAME=${APPNAME:-Moon}
     read -p "Enter your domain (e.g., example.com): " DOMAIN
@@ -222,20 +222,20 @@ install() {
     echo -e "${CYAN}Configuring MySQL root user...${RESET}"
     sleep 0.5
 
-    sudo mysql -u root <<EOF
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$ENV_MYSQL_ROOT_PASSWORD';
-FLUSH PRIVILEGES;
-EOF
+    sudo mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$ENV_MYSQL_ROOT_PASSWORD'; FLUSH PRIVILEGES;"
+
     echo -e "${YELLOW}Root user configured!${RESET}"
+
+    sleep 3
 
     # MySQL Config
     echo -e "${CYAN}Creating MySQL database and user...${RESET}"
-    mysql -uroot -p"$ENV_MYSQL_ROOT_PASSWORD" <<EOF
+    mysql -uroot -p"$ENV_MYSQL_ROOT_PASSWORD" -e "
 CREATE DATABASE IF NOT EXISTS $MAINDB;
 CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
 GRANT ALL PRIVILEGES ON $MAINDB.* TO '$DB_USER'@'localhost';
 FLUSH PRIVILEGES;
-EOF
+"
     echo -e "${YELLOW}Database $MAINDB and user $DB_USER created successfully!${RESET}"
 
     clear
