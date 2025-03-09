@@ -34,16 +34,14 @@ validate_no_spaces() {
 install() {
     ENV_FILE="/var/www/Moon/.env"
 
-    MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
-
-    #MYSQL_ROOT_PASSWORD="EscGOWiCmQaWiWJi"
-    DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)
-    MARZBAN_WEBHOOK_SECRET=$(openssl rand -base64 32)
+    MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12 | tr -dc 'A-Za-z0-9' | head -c 12)
+    DATA_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 32)
+    MARZBAN_WEBHOOK_SECRET=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 32)
 
     clear
 
     # Getting user input for MySQL database and user
-    echo -e "${CYAN}Moon Network Installation...${RESET}"
+    echo -e "${RED}Moon Network Installation...${RESET}"
     read -p "Enter app name (default: Moon): " APPNAME
     APPNAME=${APPNAME:-Moon}
     read -p "Enter your domain (e.g., example.com): " DOMAIN
@@ -69,6 +67,10 @@ install() {
     if [[ -z "$DB_PASSWORD" ]]; then
         DB_PASSWORD=$(openssl rand -base64 12)
     fi
+
+    echo "MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD"
+    sleep 5
+
 
     # Update and upgrate system
     echo -e "${CYAN}Updating system packages...${RESET}"
