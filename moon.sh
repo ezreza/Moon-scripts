@@ -406,11 +406,16 @@ EOF
 }
 
 remove() {
-    echo -e "${RED}Remove Moon !${RESET}"
+    clear
+    echo -e "${RED}Remove Moon !!!!!!!!${RESET}"
     read -p "Are you sure you want to remove MySQL and the Moon directory? This action cannot be undone (y/n): " confirm
 
     if [[ "$confirm" =~ ^[Yy]$ ]]; then
         echo "Removing MySQL and related packages..."
+
+        # Stop MySQL service
+        sudo systemctl stop mysql
+        sudo systemctl disable mysql
 
         # Uninstall MySQL packages and remove dependencies
         sudo apt-get purge -y mysql-server mysql-client mysql-common mysql-server-core-* mysql-client-core-*
@@ -430,11 +435,16 @@ remove() {
             echo "Directory /var/www/Moon does not exist. Skipping removal."
         fi
 
+        # Remove MySQL user and group if they exist
+        sudo deluser mysql
+        sudo delgroup mysql
+
         echo "Removal process completed."
     else
         echo "Operation canceled. Nothing was removed."
     fi
 }
+
 
 
 key() {
