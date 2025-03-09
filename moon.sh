@@ -41,7 +41,7 @@ install() {
     clear
 
     # Getting user input for MySQL database and user
-    echo -e "${CYAN}Moon Network Installation...${RESET}"
+    echo -e "${CYAN}Moon Network Installation :)${RESET}"
     read -p "Enter app name (default: Moon): " APPNAME
     APPNAME=${APPNAME:-Moon}
     read -p "Enter your domain (e.g., example.com): " DOMAIN
