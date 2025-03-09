@@ -34,8 +34,7 @@ validate_no_spaces() {
 install() {
     ENV_FILE="/var/www/Moon/.env"
 
-    #MYSQL_ROOT_PASSWORD=$(tr </dev/urandom -dc 'A-Za-z0-9' | head -c 12)
-    MYSQL_ROOT_PASSWORD=o0AcQmFL9zL0
+    MYSQL_ROOT_PASSWORD=$(tr </dev/urandom -dc 'A-Za-z0-9' | head -c 12)
     DATA_ENCRYPTION_KEY=$(tr </dev/urandom -dc 'A-Za-z0-9' | head -c 32)
     MARZBAN_WEBHOOK_SECRET=$(tr </dev/urandom -dc 'A-Za-z0-9' | head -c 32)
 
