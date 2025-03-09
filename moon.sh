@@ -68,9 +68,7 @@ install() {
         DB_PASSWORD=$(openssl rand -base64 12)
     fi
 
-    echo "MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD"
-    sleep 5
-
+    clear
 
     # Update and upgrate system
     echo -e "${CYAN}Updating system packages...${RESET}"
@@ -117,6 +115,7 @@ install() {
     sudo apt-get install -y git unzip curl
     #MYSQL
     sudo apt-get install -y mysql-server
+    sudo systemctl start mysql
     #COMPOSER
     sudo apt-get install -y composer
     #REDIS
@@ -130,17 +129,18 @@ install() {
     echo -e "${CYAN}Cloning project from GitHub...${RESET}"
     sleep 0.5
 
-    if [ -d "/var/www/Moon" ]; then
-        echo "Directory /var/www/Moon exists. Removing it..."
-        rm -rf /var/www/Moon
-        echo "Directory removed."
+    # چک کردن اینکه آیا دایرکتوری /var/www/Moon وجود دارد یا خیر
+    if [ ! -d "/var/www/Moon" ]; then
+        echo "Directory /var/www/Moon does not exist. Cloning the project..."
+        cd /var/www
+        git clone git@github.com:ezreza/Moon.git
+        cd Moon
+        echo -e "${YELLOW}Repositories Cloned.${RESET}"
+    else
+        cd Moon
+        echo "Directory /var/www/Moon already exists. Skipping cloning."
     fi
-
-    cd /var/www
-    git clone git@github.com:ezreza/Moon.git
-    cd Moon
-    echo -e "${YELLOW}Repositories Cloned.${RESET}"
-    wait
+    
 
     clear
 
@@ -168,11 +168,9 @@ install() {
     #echo -e "\n\n# Database configuration\nMYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >>.env
 
     if grep -q "^MYSQL_ROOT_PASSWORD=" "$ENV_FILE"; then
-        # اگر متغیر وجود داشت، مقدارش رو از .env بگیریم و به متغیر shell نسبت بدیم
         echo "✅ MYSQL_ROOT_PASSWORD found in .env. Setting shell variable to the value in .env..."
         MYSQL_ROOT_PASSWORD=$(grep -E '^MYSQL_ROOT_PASSWORD=' "$ENV_FILE" | cut -d '=' -f2)
     else
-        # اگر متغیر وجود نداشت، به انتهای فایل .env اضافه کن
         echo -e "\n# Database configuration\nMYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >>"$ENV_FILE"
         echo "💡 MYSQL_ROOT_PASSWORD added to .env file."
     fi
@@ -408,8 +406,36 @@ EOF
 }
 
 remove() {
-    echo "Soon..."
+    echo -e "${RED}Remove Moon !${RESET}"
+    read -p "Are you sure you want to remove MySQL and the Moon directory? This action cannot be undone (y/n): " confirm
+
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        echo "Removing MySQL and related packages..."
+
+        # Uninstall MySQL packages and remove dependencies
+        sudo apt-get purge -y mysql-server mysql-client mysql-common mysql-server-core-* mysql-client-core-*
+        sudo apt-get autoremove -y
+        sudo apt-get clean
+
+        # Remove MySQL configuration and data directories
+        echo "Removing MySQL configuration and data directories..."
+        sudo rm -rf /etc/mysql /var/lib/mysql /var/log/mysql /var/log/mysql.*
+
+        # Remove Moon directory if it exists
+        if [ -d "/var/www/Moon" ]; then
+            echo "Directory /var/www/Moon exists. Removing it..."
+            sudo rm -rf /var/www/Moon
+            echo "Directory /var/www/Moon removed."
+        else
+            echo "Directory /var/www/Moon does not exist. Skipping removal."
+        fi
+
+        echo "Removal process completed."
+    else
+        echo "Operation canceled. Nothing was removed."
+    fi
 }
+
 
 key() {
     clear
