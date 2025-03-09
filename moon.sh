@@ -40,7 +40,7 @@ install() {
     clear
 
     # Getting user input for MySQL database and user
-    echo -e "${RED}Moon Network Installation...${RESET}"
+    echo -e "${YELLOW}Moon Network Installation...${RESET}"
     read -p "Enter app name (default: Moon): " APPNAME
     APPNAME=${APPNAME:-Moon}
     read -p "Enter your domain (e.g., example.com): " DOMAIN
@@ -338,12 +338,12 @@ EOF
         echo "Requesting SSL certificate..."
         sudo certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" -d "$SECURE_DOMAIN"
         sed -i "s|^APP_URL=.*|APP_URL=https://$DOMAIN|" .env
+        sed -i "s|listen 443 ssl;|listen 443 ssl http2;|" "$NGINX_CONF"
 
         # Checking automatic SSL renewal after installation
         echo "🔄 Checking automatic SSL renewal..."
         sudo certbot renew --dry-run
         echo -e "${YELLOW}SSL setup and renewal check completed!${RESET}"
-
 
         if sudo certbot certificates | grep -q "$DOMAIN"; then
             echo -e "${YELLOW}✅ SSL successfully installed for $DOMAIN and $SECURE_DOMAIN!${RESET}"
