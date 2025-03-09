@@ -40,8 +40,8 @@ install() {
     clear
 
     # Getting user input for MySQL database and user
-    echo -e "${CYAN}Moon Network Installation...${RESET}"
-    read -p "Enter app name (default: Moon):" APPNAME
+    echo -e "${RED}Moon Network Installation...${RESET}"
+    read -p "Enter app name (default: Moon): " APPNAME
     APPNAME=${APPNAME:-Moon}
     read -p "Enter your domain (e.g., example.com): " DOMAIN
 
@@ -131,9 +131,9 @@ install() {
     sed -i "s/DB_DATABASE=.*/DB_DATABASE=$MAINDB/" .env
     sed -i "s/DB_USERNAME=.*/DB_USERNAME=$DB_USER/" .env
     sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" .env
-    sed -i "s/^APP_URL=.*/APP_URL=$DOMAIN/" .env
-    sed -i "s/^DATA_ENCRYPTION_KEY=.*/DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY/" .env
-    sed -i "s/^MARZBAN_WEBHOOK_SECRET=.*/MARZBAN_WEBHOOK_SECRET=$MARZBAN_WEBHOOK_SECRET/" .env
+    sed -i "s|^APP_NAME=.*|APP_NAME=$APPNAME|" .env
+    sed -i "s|^DATA_ENCRYPTION_KEY=.*|DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY|" .env
+    sed -i "s|^MARZBAN_WEBHOOK_SECRET=.*|MARZBAN_WEBHOOK_SECRET=$MARZBAN_WEBHOOK_SECRET|" .env
 
     # Generating key
     echo "Generating Laravel application key..."
@@ -337,6 +337,13 @@ EOF
         sudo apt install -y certbot python3-certbot-nginx
         echo "Requesting SSL certificate..."
         sudo certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" -d "$SECURE_DOMAIN"
+        sed -i "s|^APP_URL=.*|APP_URL=https://$DOMAIN|" .env
+
+        # Checking automatic SSL renewal after installation
+        echo "🔄 Checking automatic SSL renewal..."
+        sudo certbot renew --dry-run
+        echo -e "${YELLOW}SSL setup and renewal check completed!${RESET}"
+
 
         if sudo certbot certificates | grep -q "$DOMAIN"; then
             echo -e "${YELLOW}✅ SSL successfully installed for $DOMAIN and $SECURE_DOMAIN!${RESET}"
@@ -345,10 +352,6 @@ EOF
             exit 1
         fi
 
-        # Checking automatic SSL renewal after installation
-        echo "🔄 Checking automatic SSL renewal..."
-        sudo certbot renew --dry-run
-        echo -e "${YELLOW}SSL setup and renewal check completed!${RESET}"
     fi
 
     sleep 0.5
