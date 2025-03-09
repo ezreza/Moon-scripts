@@ -35,11 +35,14 @@ install() {
     #MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
     MYSQL_ROOT_PASSWORD="EscGOWiCmQaWiWJi"
     DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)
+    MARZBAN_WEBHOOK_SECRET=$(openssl rand -base64 32)
 
     clear
 
     # Getting user input for MySQL database and user
     echo -e "${CYAN}Moon Network Installation...${RESET}"
+    read -p "Enter app name (default: Moon):" APPNAME
+    APPNAME=${APPNAME:-Moon}
     read -p "Enter your domain (e.g., example.com): " DOMAIN
 
     while true; do
@@ -128,7 +131,9 @@ install() {
     sed -i "s/DB_DATABASE=.*/DB_DATABASE=$MAINDB/" .env
     sed -i "s/DB_USERNAME=.*/DB_USERNAME=$DB_USER/" .env
     sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" .env
+    sed -i "s/^APP_URL=.*/APP_URL=$DOMAIN/" .env
     sed -i "s/^DATA_ENCRYPTION_KEY=.*/DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY/" .env
+    sed -i "s/^MARZBAN_WEBHOOK_SECRET=.*/MARZBAN_WEBHOOK_SECRET=$MARZBAN_WEBHOOK_SECRET/" .env
 
     # Generating key
     echo "Generating Laravel application key..."
