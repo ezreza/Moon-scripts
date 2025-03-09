@@ -32,8 +32,8 @@ validate_no_spaces() {
 }
 
 install() {
-    #MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
-    MYSQL_ROOT_PASSWORD="EscGOWiCmQaWiWJi"
+    MYSQL_ROOT_PASSWORD=$(openssl rand -base64 12)
+    #MYSQL_ROOT_PASSWORD="EscGOWiCmQaWiWJi"
     DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)
     MARZBAN_WEBHOOK_SECRET=$(openssl rand -base64 32)
 
@@ -160,6 +160,9 @@ install() {
     sed -i "s|^APP_NAME=.*|APP_NAME=$APPNAME|" .env
     sed -i "s|^DATA_ENCRYPTION_KEY=.*|DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY|" .env
     sed -i "s|^MARZBAN_WEBHOOK_SECRET=.*|MARZBAN_WEBHOOK_SECRET=$MARZBAN_WEBHOOK_SECRET|" .env
+    echo -e "\n# Database configuration\nMYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> .env
+
+    ENV_MYSQL_ROOT_PASSWORD=$(grep -E '^MYSQL_ROOT_PASSWORD=' .env | cut -d '=' -f2)
 
     # Generating key
     echo "Generating Laravel application key..."
@@ -210,14 +213,14 @@ install() {
     sleep 0.5
 
     sudo mysql -u root <<EOF
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$ENV_MYSQL_ROOT_PASSWORD';
 FLUSH PRIVILEGES;
 EOF
     echo -e "${YELLOW}Root user configured!${RESET}"
 
     # MySQL Config
     echo -e "${CYAN}Creating MySQL database and user...${RESET}"
-    mysql -uroot -p"$MYSQL_ROOT_PASSWORD" <<EOF
+    mysql -uroot -p"$ENV_MYSQL_ROOT_PASSWORD" <<EOF
 CREATE DATABASE IF NOT EXISTS $MAINDB;
 CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
 GRANT ALL PRIVILEGES ON $MAINDB.* TO '$DB_USER'@'localhost';
