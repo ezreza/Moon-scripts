@@ -247,7 +247,7 @@ EOF
     # Running migrations
     echo -e "${CYAN}Running database migrations...${RESET}"
     sleep 0.5
-    php artisan migrate
+    php artisan migrate --sed
 
     # sudo mv /var/www/Moon/cli/moon /usr/local/bin/moon
     # sudo chmod +x /usr/local/bin/moon
