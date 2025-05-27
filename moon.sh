@@ -119,7 +119,11 @@ install() {
     #COMPOSER
     sudo apt-get install -y composer
     #REDIS
-    sudo apt-get install -y redis
+    sudo apt install redis-server -y
+    sudo systemctl enable redis
+    sudo systemctl start redis
+    sudo apt install php-redis -y
+    
     #Supervisor
     sudo apt-get install -y supervisor
 
@@ -247,7 +251,7 @@ EOF
     # Running migrations
     echo -e "${CYAN}Running database migrations...${RESET}"
     sleep 0.5
-    php artisan migrate --sed
+    php artisan migrate --seed
 
     # sudo mv /var/www/Moon/cli/moon /usr/local/bin/moon
     # sudo chmod +x /usr/local/bin/moon
