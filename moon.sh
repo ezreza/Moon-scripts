@@ -120,8 +120,8 @@ install() {
     sudo apt-get install -y composer
     #REDIS
     sudo apt install redis-server -y
-    sudo systemctl enable redis
-    sudo systemctl start redis
+    #sudo systemctl enable redis
+    #sudo systemctl start redis
     sudo apt install php-redis -y
     
     #Supervisor
