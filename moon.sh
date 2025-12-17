@@ -23,6 +23,10 @@ validate_domain() {
     return 0
 }
 
+validate_email() {
+    [[ "$1" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]
+}
+
 validate_no_spaces() {
     if [[ "$1" =~ \  ]]; then
         echo -e "${RED}Error: $2 should not contain spaces.${RESET}"
@@ -46,13 +50,10 @@ install() {
     APPNAME=${APPNAME:-Moon}
     read -p "Enter your domain (e.g., example.com): " DOMAIN
 
-    while true; do
-        read -p "Enter your secure domain (or subdomain) (e.g., sec.example.com): " SECURE_DOMAIN
-
-        if ! validate_domain "$DOMAIN" "$SECURE_DOMAIN"; then
-            continue
-        fi
-        break
+    read -p "Enter SSL email (Certbot): " SSL_EMAIL
+    until validate_email "$SSL_EMAIL"; do
+        echo -e "${RED}Invalid email format.${RESET}"
+        read -p "Enter valid SSL email: " SSL_EMAIL
     done
 
     read -p "Enter database name (default: moon_db): " MAINDB
@@ -121,7 +122,6 @@ install() {
     echo -e "${CYAN}Cloning project from GitHub...${RESET}"
     sleep 0.5
 
-    # چک کردن اینکه آیا دایرکتوری /var/www/Moon وجود دارد یا خیر
     if [ ! -d "/var/www/Moon" ]; then
         echo "Directory /var/www/Moon does not exist. Cloning the project..."
         cd /var/www
@@ -239,7 +239,7 @@ EOF
     # Running migrations
     echo -e "${CYAN}Running database migrations...${RESET}"
     sleep 0.5
-    php artisan migrate --seed
+    php artisan migrate
 
     # sudo mv /var/www/Moon/cli/moon /usr/local/bin/moon
     # sudo chmod +x /usr/local/bin/moon
@@ -303,34 +303,31 @@ EOF
 
     #clear
 
-    # Cretbot
+    # Certbot
     echo -e "${CYAN}Installing Certbot...${RESET}"
     sleep 0.5
-
+    
+    sudo apt install -y certbot python3-certbot-nginx
+    
     if sudo certbot certificates | grep -q "$DOMAIN"; then
         echo -e "${GREEN}SSL certificate already exists for $DOMAIN. Skipping installation.${RESET}"
     else
-        echo -e "${CYAN}Installing Certbot...${RESET}"
-        sleep 0.5
-
-        sudo apt install -y certbot python3-certbot-nginx
-        echo "Requesting SSL certificate..."
-        sudo certbot --nginx -d "$DOMAIN" -d "$SECURE_DOMAIN"
+        echo -e "${CYAN}Requesting SSL certificate for $DOMAIN...${RESET}"
+    
+        sudo certbot --nginx -n --agree-tos --email "$SSL_EMAIL" -d "$DOMAIN"
+    
         sed -i "s|^APP_URL=.*|APP_URL=https://$DOMAIN|" .env
         sed -i "s|listen 443 ssl;|listen 443 ssl http2;|" "$NGINX_CONF"
-
-        # Checking automatic SSL renewal after installation
-        echo "🔄 Checking automatic SSL renewal..."
+    
+        echo -e "${CYAN}🔄 Checking automatic SSL renewal...${RESET}"
         sudo certbot renew --dry-run
-        echo -e "${YELLOW}SSL setup and renewal check completed!${RESET}"
-
+    
         if sudo certbot certificates | grep -q "$DOMAIN"; then
-            echo -e "${YELLOW}✅ SSL successfully installed for $DOMAIN and $SECURE_DOMAIN!${RESET}"
+            echo -e "${GREEN}✅ SSL successfully installed for $DOMAIN!${RESET}"
         else
             echo -e "${RED}❌ Error: SSL installation failed!${RESET}"
             exit 1
         fi
-
     fi
 
     sleep 0.5
@@ -344,7 +341,6 @@ EOF
     echo "Database Password:   $DB_PASSWORD"
     echo "--------------------------------------------"
     echo -e "${YELLOW}https://$DOMAIN${RESET}"
-    echo -e "${YELLOW}https://$SECURE_DOMAIN/phpmyadmin${RESET}"
 
     rm -- "$0"
 }
