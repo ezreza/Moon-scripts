@@ -24,7 +24,8 @@ validate_email() {
     [[ "$1" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]
 }
 
-rand() { tr </dev/urandom -dc 'A-Za-z0-9!@#$%^&*()_+' | head -c "$1"; }
+#rand() { tr </dev/urandom -dc 'A-Za-z0-9!@#$%^&*()_+' | head -c "$1"; }
+rand() { tr </dev/urandom -dc 'A-Za-z0-9' | head -c "$1"; }
 
 # =========================
 # Variables (fixed paths)
