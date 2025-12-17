@@ -123,10 +123,12 @@ install() {
         php artisan key:generate --force
     fi
 
+    # Permissions
+    sudo chown -R www-data:www-data "$INSTALL_DIR"
+    sudo chmod -R 775 "$INSTALL_DIR"/storage "$INSTALL_DIR"/bootstrap/cache
     php artisan storage:link || true
-    chown -R www-data:www-data "$INSTALL_DIR"
-    chmod -R 775 storage bootstrap/cache
 
+    # MySQL
     echo -e "${CYAN}Configuring MySQL...${RESET}"
     mysql <<EOF
 CREATE DATABASE IF NOT EXISTS $MAINDB;
