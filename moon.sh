@@ -73,7 +73,7 @@ install() {
     apt-get update -y
     apt-get install -y \
         nginx mysql-server redis-server supervisor \
-        php php-fpm php-cli php-mysql php-xml php-mbstring php-curl php-zip php-bcmath php-redis \
+        php php-fpm php-cli php-mysql php-xml php-mbstring php-curl php-zip php-bcmath php-gd php-redis \
         git unzip curl composer \
         certbot python3-certbot-nginx
 
@@ -148,27 +148,39 @@ EOF
     sed -i "s/server_name .*/server_name $DOMAIN;/" "$NGINX_CONF"
     nginx -t && systemctl reload nginx
 
+    # Cron
     (crontab -l 2>/dev/null | grep -v 'artisan schedule:run'; \
      echo "* * * * * cd $INSTALL_DIR && php artisan schedule:run >> /dev/null 2>&1") | crontab -
 
-    touch storage/logs/queue-worker.log
-    chown www-data:www-data storage/logs/queue-worker.log
+    # Supervisor service
+    sudo systemctl enable supervisor
+    sudo systemctl start supervisor
 
-    cat > "$SUPERVISOR_CONF" <<EOF
+    # Setting Worker for Laravel Queue
+    SUPERVISOR_CONF="/etc/supervisor/conf.d/laravel-queue-worker.conf"
+    echo "Configuring Laravel Queue Worker..."
+
+    sudo bash -c "cat > $SUPERVISOR_CONF" <<EOF
 [program:laravel-queue-worker]
-command=php artisan queue:work --tries=3 --timeout=90
-directory=$INSTALL_DIR
-user=www-data
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/Moon/artisan queue:work --tries=3 --timeout=90
 autostart=true
 autorestart=true
+numprocs=1
 redirect_stderr=true
-stdout_logfile=$INSTALL_DIR/storage/logs/queue-worker.log
+stdout_logfile=/var/www/Moon/storage/logs/queue-worker.log
 EOF
 
-    supervisorctl reread
-    supervisorctl update
-    supervisorctl restart laravel-queue-worker || true
+    if [ -f "$SUPERVISOR_CONF" ]; then
+        echo "Laravel Queue Worker configuration added successfully!"
+        sudo supervisorctl reread
+        sudo supervisorctl update
+        sudo supervisorctl start laravel-queue-worker
+    else
+        echo "Error: Failed to create Supervisor configuration file!"
+    fi
 
+    # Build
     echo -e "${CYAN}Building frontend...${RESET}"
     npm ci
     npm run build
