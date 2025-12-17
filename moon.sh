@@ -74,32 +74,19 @@ install() {
     echo -e "${CYAN}Updating system packages...${RESET}"
     sleep 0.5
     sudo apt-get update -y
-    sudo apt-get upgrade -y
 
     clear
 
-    # remove Apache
-    echo -e "${CYAN}Checking if Apache is installed...${RESET}"
+    # Disable Apache to avoid conflict with Nginx
+    echo -e "${CYAN}Disabling Apache if it exists...${RESET}"
     sleep 0.5
-
-    if dpkg -l | grep -q apache2; then
+    
+    if systemctl list-unit-files | grep -q apache2.service; then
         echo "Stopping Apache service..."
-        sudo systemctl stop apache2
-        sudo systemctl disable apache2
-
-        echo "Removing Apache and related packages..."
-        sudo apt-get purge -y apache2 apache2-utils apache2-bin apache2.2-common apache2-doc apache2-data libapache2-mod-php
-
-        echo "Cleaning up dependencies..."
-        sudo apt-get autoremove -y
-        sudo apt-get autoclean -y
-
-        echo "Removing leftover files..."
-        sudo rm -rf /etc/apache2 /var/www/html
-
-        echo "Apache has been completely removed!"
+        systemctl stop apache2 2>/dev/null || true
+        systemctl disable apache2 2>/dev/null || true
     else
-        echo "Apache is not installed. Skipping removal..."
+        echo "Apache service not found. Skipping..."
     fi
 
     clear
@@ -312,53 +299,6 @@ EOF
     sudo apt-get install -y nodejs
     npm install
     npm run build
-
-    clear
-
-    # PhpMyAdmin
-    set -e
-    echo -e "${CYAN}Installing phpMyAdmin...${RESET}"
-    sleep 0.5
-
-    export DEBIAN_FRONTEND=noninteractive
-    sudo apt install -y phpmyadmin php-gd php-json
-
-    sudo phpenmod mbstring
-    PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
-    sudo systemctl restart nginx
-    sudo systemctl restart php${PHP_VERSION}-fpm
-
-    if [ -d "/usr/share/phpmyadmin" ]; then
-        echo "✅ phpMyAdmin installed successfully!"
-    else
-        echo "❌ Error: phpMyAdmin installation failed!"
-        exit 1
-    fi
-
-    # Set phpMyAdmin Nginx configuration file path
-    PHPMYADMIN_NGINX_CONF="/etc/nginx/sites-available/phpmyadmin"
-
-    if [ -f "$PHPMYADMIN_NGINX_CONF" ]; then
-        echo "Configuring Nginx PhpMyAdmin with new server name..."
-        sed -i "s/server_name [^;]*/server_name $SECURE_DOMAIN/" "$PHPMYADMIN_NGINX_CONF"
-        sudo nginx -t && sudo systemctl restart nginx
-    else
-        echo -e "${CYAN}Configuring phpMyAdmin Nginx...${RESET}"
-        sleep 0.5
-
-        sudo cp /var/www/Moon/nginx/phpmyadmin.conf "$PHPMYADMIN_NGINX_CONF"
-        sudo ln -sf "$PHPMYADMIN_NGINX_CONF" /etc/nginx/sites-enabled/
-
-        if [ ! -f "$PHPMYADMIN_NGINX_CONF" ]; then
-            echo -e "${RED}Error: Nginx configuration file not found at $PHPMYADMIN_NGINX_CONF${RESET}"
-            exit 1
-        fi
-
-        sed -i "s/server_name [^;]*/server_name $SECURE_DOMAIN/" "$PHPMYADMIN_NGINX_CONF"
-
-        echo -e "${YELLOW}Installing phpMyAdmin...${RESET}"
-        sudo nginx -t && sudo systemctl restart nginx
-    fi
 
     clear
 
