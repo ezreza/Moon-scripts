@@ -97,18 +97,19 @@ install() {
 
     # Composer (as www-data to avoid permission issues)
     echo -e "${CYAN}Installing Composer dependencies...${RESET}"
-    sudo -u www-data composer install --optimize-autoloader --no-dev
+    #sudo -u www-data composer install --optimize-autoloader --no-dev
+    COMPOSER_ALLOW_SUPERUSER=1 composer install --optimize-autoloader --no-dev
 
     # .env setup (preserve existing values if reinstall)
     if [ ! -f .env ]; then
         cp .env.example .env
     fi
 
-    sed -i "s|^APP_NAME=.*|APP_NAME=$APPNAME|" .env
     sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env
     sed -i "s/DB_DATABASE=.*/DB_DATABASE=$MAINDB/" .env
     sed -i "s/DB_USERNAME=.*/DB_USERNAME=$DB_USER/" .env
     sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" .env
+    sed -i "s|^APP_NAME=.*|APP_NAME=$APPNAME|" .env
     sed -i "s|^DATA_ENCRYPTION_KEY=.*|DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY|" .env
     sed -i "s|^MARZBAN_WEBHOOK_SECRET=.*|MARZBAN_WEBHOOK_SECRET=$MARZBAN_WEBHOOK_SECRET|" .env
 
@@ -170,8 +171,8 @@ EOF
     supervisorctl restart laravel-queue-worker || true
 
     # Frontend build
-    sudo -u www-data npm ci
-    sudo -u www-data npm run build
+    npm ci
+    npm run build
 
     # Certbot
     certbot --nginx -n --agree-tos --email "$SSL_EMAIL" -d "$DOMAIN" || echo -e "${YELLOW}Certbot failed or already exists.${RESET}"
