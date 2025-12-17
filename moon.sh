@@ -79,6 +79,22 @@ install() {
     echo -e "${CYAN}Installing required dependencies...${RESET}"
     apt-get install -y nginx php php-cli php-fpm php-mbstring php-xml php-curl php-mysql php-zip php-bcmath git unzip curl mysql-server composer redis-server php-redis supervisor
 
+    systemctl enable nginx
+    systemctl start nginx
+    systemctl enable mysql
+    systemctl start mysql
+    systemctl enable redis-server
+    systemctl start redis-server
+    systemctl enable supervisor
+    systemctl start supervisor
+
+
+    # Configure MySQL root password
+    mysql -uroot <<EOF
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';
+FLUSH PRIVILEGES;
+EOF
+
     # Clone project
     if [ ! -d "$INSTALL_DIR" ]; then
         echo -e "${CYAN}Cloning project...${RESET}"
@@ -106,6 +122,14 @@ install() {
         MYSQL_ROOT_PASSWORD=$(grep -E '^MYSQL_ROOT_PASSWORD=' "$ENV_FILE" | cut -d '=' -f2)
     fi
 
+    # MySQL
+    mysql -uroot -p"$MYSQL_ROOT_PASSWORD" <<EOF
+CREATE DATABASE IF NOT EXISTS $MAINDB;
+CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
+GRANT ALL PRIVILEGES ON $MAINDB.* TO '$DB_USER'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+
     # Laravel setup
     php artisan key:generate --force
     php artisan storage:link || true
@@ -118,17 +142,8 @@ install() {
         ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
     fi
     sed -i "s/server_name .*/server_name $DOMAIN;/" "$NGINX_CONF"
+    systemctl start nginx
     nginx -t && systemctl reload nginx
-
-    # MySQL
-mysql <<EOF
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';
-CREATE DATABASE IF NOT EXISTS $MAINDB;
-CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
-ALTER USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
-GRANT ALL PRIVILEGES ON $MAINDB.* TO '$DB_USER'@'localhost';
-FLUSH PRIVILEGES;
-EOF
 
     # Migrations & cache
     php artisan migrate --force
@@ -198,64 +213,54 @@ uninstall() {
     NGINX_CONF="/etc/nginx/sites-available/moon_network"
     SUPERVISOR_CONF="/etc/supervisor/conf.d/laravel-queue-worker.conf"
 
-    echo -e "${RED}WARNING: This will completely remove Moon Network, database, MySQL, and all related files!${RESET}"
+    echo -e "${RED}WARNING: This will completely remove Moon Network, database, and all related files!${RESET}"
     read -p "Type YES to continue: " CONFIRM
     if [[ "$CONFIRM" != "YES" ]]; then
         echo "Aborted."
         exit 1
     fi
 
-    # =========================
-    # Stop services
-    # =========================
+    # -------------------------
+    # Extract credentials from .env if exists
+    # -------------------------
+    if [ -f "$ENV_FILE" ]; then
+        MYSQL_ROOT_PASSWORD=$(grep -E '^MYSQL_ROOT_PASSWORD=' "$ENV_FILE" | cut -d '=' -f2)
+        MAINDB=$(grep -E '^DB_DATABASE=' "$ENV_FILE" | cut -d '=' -f2)
+        DB_USER=$(grep -E '^DB_USERNAME=' "$ENV_FILE" | cut -d '=' -f2)
+    else
+        read -sp "Enter MySQL root password: " MYSQL_ROOT_PASSWORD
+        echo ""
+        read -p "Database name to drop: " MAINDB
+        read -p "Database user to drop: " DB_USER
+    fi
+
     echo -e "${CYAN}Stopping services...${RESET}"
     supervisorctl stop laravel-queue-worker || true
     systemctl stop nginx || true
-    systemctl stop mysql || true
 
-    # =========================
-    # Remove Cron jobs
-    # =========================
     echo -e "${CYAN}Removing Cron jobs...${RESET}"
     crontab -l 2>/dev/null | grep -v 'artisan schedule:run' | crontab -
 
-    # =========================
-    # Remove project files
-    # =========================
+    echo -e "${CYAN}Dropping MySQL database and user...${RESET}"
+    mysql -uroot -p"$MYSQL_ROOT_PASSWORD" <<EOF
+DROP DATABASE IF EXISTS $MAINDB;
+DROP USER IF EXISTS '$DB_USER'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+
     echo -e "${CYAN}Removing project files...${RESET}"
     rm -rf "$INSTALL_DIR"
 
-    # =========================
-    # Remove MySQL completely
-    # =========================
-    echo -e "${CYAN}Completely removing MySQL...${RESET}"
-    apt-get remove --purge -y mysql-server mysql-client mysql-common
-    apt-get autoremove -y
-    apt-get autoclean -y
-    rm -rf /var/lib/mysql /etc/mysql /var/log/mysql
-
-    # =========================
-    # Remove Nginx and Supervisor configs
-    # =========================
     echo -e "${CYAN}Removing Nginx and Supervisor configs...${RESET}"
-    rm -f "$NGINX_CONF"
-    rm -f /etc/nginx/sites-enabled/moon_network
-    rm -f "$SUPERVISOR_CONF"
+    rm -f "$NGINX_CONF" /etc/nginx/sites-enabled/moon_network "$SUPERVISOR_CONF"
 
-
-    # =========================
-    # Reload services
-    # =========================
     echo -e "${CYAN}Reloading services...${RESET}"
-    systemctl daemon-reload || true
-    systemctl reset-failed || true
     systemctl reload nginx || true
     supervisorctl reread
     supervisorctl update
 
-    echo -e "${GREEN}Moon Network and MySQL have been completely removed.${RESET}"
+    echo -e "${GREEN}Moon Network has been completely removed.${RESET}"
 }
-
 
 
 # =========================
