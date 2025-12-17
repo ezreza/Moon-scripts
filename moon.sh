@@ -105,15 +105,27 @@ install() {
         cp .env.example .env
     fi
 
-    sed -i 's/^# DB_HOST/DB_HOST/' .env
-    sed -i 's/^# DB_PORT/DB_PORT/' .env
-    sed -i 's/^# DB_DATABASE/DB_DATABASE/' .env
-    sed -i 's/^# DB_USERNAME/DB_USERNAME/' .env
-    sed -i 's/^# DB_PASSWORD/DB_PASSWORD/' .env
-    sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env
-    sed -i "s/DB_DATABASE=.*/DB_DATABASE=$MAINDB/" .env
-    sed -i "s/DB_USERNAME=.*/DB_USERNAME=$DB_USER/" .env
-    sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" .env
+    # sed -i 's/^# DB_HOST/DB_HOST/' .env
+    # sed -i 's/^# DB_PORT/DB_PORT/' .env
+    # sed -i 's/^# DB_DATABASE/DB_DATABASE/' .env
+    # sed -i 's/^# DB_USERNAME/DB_USERNAME/' .env
+    # sed -i 's/^# DB_PASSWORD/DB_PASSWORD/' .env
+    # sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env
+    # sed -i "s/DB_DATABASE=.*/DB_DATABASE=$MAINDB/" .env
+    # sed -i "s/DB_USERNAME=.*/DB_USERNAME=$DB_USER/" .env
+    # sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" .env
+
+
+    sed -i '/^# DB_HOST=/s/^# *//' .env
+    sed -i '/^# DB_PORT=/s/^# *//' .env
+    sed -i '/^# DB_DATABASE=/s/^# *//' .env
+    sed -i '/^# DB_USERNAME=/s/^# *//' .env
+    sed -i '/^# DB_PASSWORD=/s/^# *//' .env
+    sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env
+    sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$MAINDB/" .env
+    sed -i "s/^DB_USERNAME=.*/DB_USERNAME=$DB_USER/" .env
+    sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" .env
+
     sed -i "s|^APP_NAME=.*|APP_NAME=$APPNAME|" .env
     sed -i "s|^DATA_ENCRYPTION_KEY=.*|DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY|" .env
     sed -i "s|^MARZBAN_WEBHOOK_SECRET=.*|MARZBAN_WEBHOOK_SECRET=$MARZBAN_WEBHOOK_SECRET|" .env
