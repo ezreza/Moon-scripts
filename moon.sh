@@ -104,6 +104,10 @@ install() {
         cp .env.example .env
     fi
 
+    sed -i 's/^APP_DEBUG=.*/APP_DEBUG=false/' .env
+    sed -i 's/^APP_ENV=.*/APP_ENV=production/' .env
+    sed -i "s|^APP_URL=.*|APP_URL=https://$DOMAIN|" .env
+
     sed -i '/^# DB_HOST=/s/^# *//' .env
     sed -i '/^# DB_PORT=/s/^# *//' .env
     sed -i '/^# DB_DATABASE=/s/^# *//' .env
@@ -140,6 +144,7 @@ EOF
     php artisan migrate --force
     php artisan optimize
 
+    # Nginx
     if [ ! -f "$NGINX_CONF" ]; then
         cp nginx/Moon.conf "$NGINX_CONF"
         ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/$(basename "$NGINX_CONF")
@@ -185,8 +190,10 @@ EOF
     npm ci
     npm run build
 
+    # Cert
     certbot certificates | grep -q "$DOMAIN" || \
         certbot --nginx -n --agree-tos --email "$SSL_EMAIL" -d "$DOMAIN" || true
+    sed -i "s|listen 443 ssl;|listen 443 ssl http2;|" "$NGINX_CONF"
 
     clear
     echo -e "${GREEN}Installation completed successfully 🎉${RESET}"
