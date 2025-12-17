@@ -97,7 +97,8 @@ install() {
     cd "$INSTALL_DIR" || exit 1
 
     echo -e "${CYAN}Installing backend dependencies...${RESET}"
-    sudo -u www-data composer install --no-dev --optimize-autoloader
+    #sudo -u www-data composer install --no-dev --optimize-autoloader
+    COMPOSER_ALLOW_SUPERUSER=1 composer install --optimize-autoloader --no-dev
 
     if [ ! -f .env ]; then
         cp .env.example .env
@@ -167,8 +168,8 @@ EOF
     supervisorctl restart laravel-queue-worker || true
 
     echo -e "${CYAN}Building frontend...${RESET}"
-    sudo -u www-data npm ci
-    sudo -u www-data npm run build
+    npm ci
+    npm run build
 
     certbot certificates | grep -q "$DOMAIN" || \
         certbot --nginx -n --agree-tos --email "$SSL_EMAIL" -d "$DOMAIN" || true
