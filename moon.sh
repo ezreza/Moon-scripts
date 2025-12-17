@@ -194,6 +194,7 @@ EOF
 # =========================
 uninstall() {
     INSTALL_DIR="/var/www/Moon"
+    ENV_FILE="$INSTALL_DIR/.env"
     NGINX_CONF="/etc/nginx/sites-available/moon_network"
     SUPERVISOR_CONF="/etc/supervisor/conf.d/laravel-queue-worker.conf"
 
@@ -202,6 +203,20 @@ uninstall() {
     if [[ "$CONFIRM" != "YES" ]]; then
         echo "Aborted."
         exit 1
+    fi
+
+    # =========================
+    # Extract DB credentials from .env if exists
+    # =========================
+    if [ -f "$ENV_FILE" ]; then
+        MYSQL_ROOT_PASSWORD=$(grep -E '^MYSQL_ROOT_PASSWORD=' "$ENV_FILE" | cut -d '=' -f2)
+        MAINDB=$(grep -E '^DB_DATABASE=' "$ENV_FILE" | cut -d '=' -f2)
+        DB_USER=$(grep -E '^DB_USERNAME=' "$ENV_FILE" | cut -d '=' -f2)
+    else
+        read -sp "Enter MySQL root password: " MYSQL_ROOT_PASSWORD
+        echo ""
+        read -p "Enter database name to drop: " MAINDB
+        read -p "Enter database user to drop: " DB_USER
     fi
 
     echo -e "${CYAN}Stopping services...${RESET}"
@@ -215,11 +230,6 @@ uninstall() {
     rm -rf "$INSTALL_DIR"
 
     echo -e "${CYAN}Dropping MySQL database and user...${RESET}"
-    read -sp "Enter MySQL root password: " MYSQL_ROOT_PASSWORD
-    echo ""
-    read -p "Enter database name to drop: " MAINDB
-    read -p "Enter database user to drop: " DB_USER
-
     mysql -uroot -p"$MYSQL_ROOT_PASSWORD" <<EOF
 DROP DATABASE IF EXISTS $MAINDB;
 DROP USER IF EXISTS '$DB_USER'@'localhost';
@@ -238,6 +248,7 @@ EOF
 
     echo -e "${GREEN}Moon Network has been completely removed.${RESET}"
 }
+
 
 # =========================
 # SSH Key setup
