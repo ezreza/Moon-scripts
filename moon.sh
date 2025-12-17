@@ -24,7 +24,6 @@ validate_email() {
     [[ "$1" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$ ]]
 }
 
-#rand() { tr </dev/urandom -dc 'A-Za-z0-9!@#$%^&*()_+' | head -c "$1"; }
 rand() { tr </dev/urandom -dc 'A-Za-z0-9' | head -c "$1"; }
 
 # =========================
@@ -134,10 +133,11 @@ install() {
 
     # MySQL setup (safe for reinstall)
     MYSQL_ROOT_PASSWORD=$(rand 16)  # Generate new if reinstalling after full purge
-    mysql -uroot <<EOF
+    mysql <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';
 CREATE DATABASE IF NOT EXISTS $MAINDB;
 CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
+ALTER USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
 GRANT ALL PRIVILEGES ON $MAINDB.* TO '$DB_USER'@'localhost';
 FLUSH PRIVILEGES;
 EOF
