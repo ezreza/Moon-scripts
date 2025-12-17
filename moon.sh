@@ -59,15 +59,12 @@ install() {
     read -p "Enter database name (default: moon_db): " MAINDB
     MAINDB=${MAINDB:-moon_db}
 
-
     read -p "Enter database username (default: moon_user): " DB_USER
     DB_USER=${DB_USER:-moon_user}
-
 
     read -sp "Enter database user password (leave empty to generate one): " DB_PASSWORD
     echo ""
     DB_PASSWORD=${DB_PASSWORD:-$(rand 12)}
-
 
     MYSQL_ROOT_PASSWORD=$(rand 12)
     DATA_ENCRYPTION_KEY=$(rand 32)
@@ -129,22 +126,31 @@ install() {
     # Environment (.env)
     # =========================
     if [ ! -f .env ]; then
-    cp .env.example .env
+        cp .env.example .env
     fi
 
+    sed -i 's/^# DB_HOST/DB_HOST/' .env
+    sed -i 's/^# DB_PORT/DB_PORT/' .env
+    sed -i 's/^# DB_DATABASE/DB_DATABASE/' .env
+    sed -i 's/^# DB_USERNAME/DB_USERNAME/' .env
+    sed -i 's/^# DB_PASSWORD/DB_PASSWORD/' .env
+    sed -i 's/DB_CONNECTION=.*/DB_CONNECTION=mysql/' .env
+    sed -i "s/DB_DATABASE=.*/DB_DATABASE=$MAINDB/" .env
+    sed -i "s/DB_USERNAME=.*/DB_USERNAME=$DB_USER/" .env
+    sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" .env
     sed -i "s|^APP_NAME=.*|APP_NAME=$APPNAME|" .env
-    sed -i "s|^APP_ENV=.*|APP_ENV=production|" .env
-    sed -i "s|^APP_DEBUG=.*|APP_DEBUG=false|" .env
-    sed -i "s|^APP_URL=.*|APP_URL=https://$DOMAIN|" .env
-    sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" .env
-    sed -i "s|^DB_DATABASE=.*|DB_DATABASE=$MAINDB|" .env
-    sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$DB_USER|" .env
-    sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$DB_PASSWORD|" .env
+    sed -i "s|^DATA_ENCRYPTION_KEY=.*|DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY|" .env
+    sed -i "s|^MARZBAN_WEBHOOK_SECRET=.*|MARZBAN_WEBHOOK_SECRET=$MARZBAN_WEBHOOK_SECRET|" .env
 
-    # secrets (append if missing)
-    grep -q '^MYSQL_ROOT_PASSWORD=' .env || echo "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >> .env
-    grep -q '^DATA_ENCRYPTION_KEY=' .env || echo "DATA_ENCRYPTION_KEY=$DATA_ENCRYPTION_KEY" >> .env
-    grep -q '^MARZBAN_WEBHOOK_SECRET=' .env || echo "MARZBAN_WEBHOOK_SECRET=$MARZBAN_WEBHOOK_SECRET" >> .env
+    if grep -q "^MYSQL_ROOT_PASSWORD=" "$ENV_FILE"; then
+        echo "✅ MYSQL_ROOT_PASSWORD found in .env. Setting shell variable to the value in .env..."
+        MYSQL_ROOT_PASSWORD=$(grep -E '^MYSQL_ROOT_PASSWORD=' "$ENV_FILE" | cut -d '=' -f2)
+    else
+        echo -e "\n# Database configuration\nMYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" >>"$ENV_FILE"
+        echo "💡 MYSQL_ROOT_PASSWORD added to .env file."
+    fi
+
+    echo "MYSQL_ROOT_PASSWORD is now set to: $MYSQL_ROOT_PASSWORD"
 
     # =========================
     # Laravel setup
