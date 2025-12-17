@@ -150,11 +150,7 @@ install() {
 
     # MySQL setup (safe for reinstall)
     MYSQL_ROOT_PASSWORD=$(rand 16)
-    sudo mysql <<EOF
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';
-FLUSH PRIVILEGES;
-EOF
-    mysql -uroot -p"$MYSQL_ROOT_PASSWORD" --batch --silent <<EOF
+    mysql -uroot -p"$MYSQL_ROOT_PASSWORD" <<EOF
 CREATE DATABASE IF NOT EXISTS $MAINDB;
 CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
 GRANT ALL PRIVILEGES ON $MAINDB.* TO '$DB_USER'@'localhost';
