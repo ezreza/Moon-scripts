@@ -68,14 +68,14 @@ install() {
         DB_PASSWORD=$(tr </dev/urandom -dc 'A-Za-z0-9' | head -c 12)
     fi
 
-    clear
+    #clear
 
     # Update and upgrate system
     echo -e "${CYAN}Updating system packages...${RESET}"
     sleep 0.5
     sudo apt-get update -y
 
-    clear
+    #clear
 
     # Disable Apache to avoid conflict with Nginx
     echo -e "${CYAN}Disabling Apache if it exists...${RESET}"
@@ -85,11 +85,12 @@ install() {
         echo "Stopping Apache service..."
         systemctl stop apache2 2>/dev/null || true
         systemctl disable apache2 2>/dev/null || true
+        systemctl mask apache2 2>/dev/null || true
     else
         echo "Apache service not found. Skipping..."
     fi
 
-    clear
+    #clear
 
     # Dependencies
     echo -e "${CYAN}Installing required dependencies...${RESET}"
@@ -114,7 +115,7 @@ install() {
     #Supervisor
     sudo apt-get install -y supervisor
 
-    clear
+    #clear
 
     # Clone project
     echo -e "${CYAN}Cloning project from GitHub...${RESET}"
@@ -132,7 +133,7 @@ install() {
         cd /var/www/Moon
     fi
 
-    clear
+    #clear
 
     # Composer dependencies
     echo -e "${CYAN}Installing Laravel dependencies with Composer...${RESET}"
@@ -179,7 +180,7 @@ install() {
     sudo chmod -R 775 /var/www/Moon/storage /var/www/Moon/bootstrap/cache
     php artisan storage:link
 
-    clear
+    #clear
 
     # Config Nginx
     NGINX_CONF="/etc/nginx/sites-available/moon_network"
@@ -211,7 +212,7 @@ install() {
         sudo nginx -t && sudo systemctl restart nginx
     fi
 
-    clear
+    #clear
 
     # MySQL root
     echo -e "${CYAN}Configuring MySQL root user...${RESET}"
@@ -233,7 +234,7 @@ FLUSH PRIVILEGES;
 EOF
     echo -e "${YELLOW}Database $MAINDB and user $DB_USER created successfully!${RESET}"
 
-    clear
+    #clear
 
     # Running migrations
     echo -e "${CYAN}Running database migrations...${RESET}"
@@ -251,7 +252,7 @@ EOF
     php artisan view:cache
     php artisan route:cache
 
-    clear
+    #clear
 
     # Setting up Cronjob
     echo -e "${CYAN}Setting up Cronjob and supervisor...${RESET}"
@@ -290,17 +291,17 @@ EOF
         echo "Error: Failed to create Supervisor configuration file!"
     fi
 
-    clear
+    #clear
 
     # Node.js 18
-    echo -e "${CYAN}Installing Node.js 18...${RESET}"
+    echo -e "${CYAN}Installing Node.js 20...${RESET}"
     sleep 0.5
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt-get install -y nodejs
     npm install
     npm run build
 
-    clear
+    #clear
 
     # Cretbot
     echo -e "${CYAN}Installing Certbot...${RESET}"
