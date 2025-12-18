@@ -151,7 +151,6 @@ EOF
     fi
 
     sed -i "s/server_name .*/server_name $DOMAIN;/" "$NGINX_CONF"
-    nginx -t && systemctl reload nginx
 
     # Cron
     (crontab -l 2>/dev/null | grep -v 'artisan schedule:run'; \
@@ -190,10 +189,29 @@ EOF
     npm ci
     npm run build
 
+    # PHP upload limits
+    echo -e "${CYAN}Configuring PHP upload limits...${RESET}"
+    
+    PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
+    PHP_INI="/etc/php/$PHP_VERSION/fpm/php.ini"
+    
+    if [ -f "$PHP_INI" ]; then
+        grep -q '^upload_max_filesize = 10M' "$PHP_INI" || \
+        sed -i 's/^upload_max_filesize = .*/upload_max_filesize = 10M/' "$PHP_INI"
+    
+        grep -q '^post_max_size = 25M' "$PHP_INI" || \
+        sed -i 's/^post_max_size = .*/post_max_size = 25M/' "$PHP_INI"
+    
+        systemctl reload "php$PHP_VERSION-fpm"
+    else
+        echo -e "${YELLOW}Warning: $PHP_INI not found. Skipping PHP upload config.${RESET}"
+    fi
+
     # Cert
     certbot --nginx -n --agree-tos --email "$SSL_EMAIL" -d "$DOMAIN" || true
     grep -q 'listen 443 ssl http2;.*managed by Certbot' "$NGINX_CONF" || \
     sed -i -E 's|listen[[:space:]]+443[[:space:]]+ssl;([[:space:]]*# managed by Certbot)|listen 443 ssl http2;\1|' "$NGINX_CONF"
+    nginx -t && systemctl reload nginx
 
     clear
     echo -e "${GREEN}Installation completed successfully 🎉${RESET}"
