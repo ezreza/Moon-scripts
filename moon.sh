@@ -213,13 +213,25 @@ EOF
     sed -i -E 's|listen[[:space:]]+443[[:space:]]+ssl;([[:space:]]*# managed by Certbot)|listen 443 ssl http2;\1|' "$NGINX_CONF"
     nginx -t && systemctl reload nginx
 
+    # moon CLI
+    echo -e "${CYAN}Installing moon CLI command...${RESET}"
+    
+    CLI_SOURCE="$INSTALL_DIR/cli/moon"
+    CLI_TARGET="/usr/local/bin/moon"
+    
+    if [ -f "$CLI_SOURCE" ]; then
+        cp "$CLI_SOURCE" "$CLI_TARGET"
+        chmod +x "$CLI_TARGET"
+        echo -e "${GREEN}moon command installed! You can now run 'moon' from anywhere.${RESET}"
+    else
+        echo -e "${YELLOW}moon CLI script not found at $CLI_SOURCE${RESET}"
+    fi
+
     clear
-    echo -e "${GREEN}Installation completed successfully 🎉${RESET}"
+    echo -e "${GREEN}Installation completed successfully!${RESET}"
     echo "----------------------------------"
-    echo "URL: https://$DOMAIN"
-    echo "DB Name: $MAINDB"
-    echo "DB User: $DB_USER"
-    echo "DB Pass: $DB_PASSWORD"
+    echo -e "You can now manage your Moon project using the ${CYAN}moon${RESET} command from anywhere."
+    echo -e "Visit your project at: ${YELLOW}https://$DOMAIN${RESET}"
     echo "----------------------------------"
 }
 
