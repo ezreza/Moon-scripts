@@ -191,9 +191,9 @@ EOF
     npm run build
 
     # Cert
-    certbot certificates | grep -q "$DOMAIN" || \
-        certbot --nginx -n --agree-tos --email "$SSL_EMAIL" -d "$DOMAIN" || true
-    sed -i "s|listen 443 ssl;|listen 443 ssl http2;|" "$NGINX_CONF"
+    certbot --nginx -n --agree-tos --email "$SSL_EMAIL" -d "$DOMAIN" || true
+    grep -q 'listen 443 ssl http2;.*managed by Certbot' "$NGINX_CONF" || \
+    sed -i -E 's|listen[[:space:]]+443[[:space:]]+ssl;([[:space:]]*# managed by Certbot)|listen 443 ssl http2;\1|' "$NGINX_CONF"
 
     clear
     echo -e "${GREEN}Installation completed successfully 🎉${RESET}"
