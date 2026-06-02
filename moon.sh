@@ -39,7 +39,7 @@ SUPERVISOR_CONF="/etc/supervisor/conf.d/laravel-queue-worker.conf"
 # =========================
 install() {
     clear
-    echo -e "${CYAN}Moon Network Installation${RESET}"
+    echo -e "${CYAN}MoonNetwork Installation${RESET}"
 
     read -p "Enter app name (default: Moon): " APPNAME
     APPNAME=${APPNAME:-Moon}
