@@ -33,7 +33,6 @@ INSTALL_DIR="/var/www/Moon"
 ENV_FILE="$INSTALL_DIR/.env"
 NGINX_CONF="/etc/nginx/sites-available/moon_network"
 SUPERVISOR_CONF="/etc/supervisor/conf.d/laravel-queue-worker.conf"
-PHP_VERSION="8.2"  # <--- اینجا ورژن PHP را مشخص کردیم
 
 # =========================
 # Install
@@ -74,9 +73,7 @@ install() {
     apt-get update -y
     apt-get install -y \
         nginx mysql-server redis-server supervisor \
-        php$PHP_VERSION php$PHP_VERSION-fpm php$PHP_VERSION-cli php$PHP_VERSION-mysql php$PHP_VERSION-xml \
-        php$PHP_VERSION-mbstring php$PHP_VERSION-curl php$PHP_VERSION-zip php$PHP_VERSION-bcmath \
-        php$PHP_VERSION-gd php$PHP_VERSION-redis \
+        php php-fpm php-cli php-mysql php-xml php-mbstring php-curl php-zip php-bcmath php-gd php-redis \
         git unzip curl composer \
         certbot python3-certbot-nginx
 
@@ -100,6 +97,7 @@ install() {
     cd "$INSTALL_DIR" || exit 1
 
     echo -e "${CYAN}Installing backend dependencies...${RESET}"
+    #sudo -u www-data composer install --no-dev --optimize-autoloader
     COMPOSER_ALLOW_SUPERUSER=1 composer install --optimize-autoloader --no-dev
 
     if [ ! -f .env ]; then
@@ -126,13 +124,13 @@ install() {
     sed -i "s|^MARZBAN_WEBHOOK_SECRET=.*|MARZBAN_WEBHOOK_SECRET=$MARZBAN_WEBHOOK_SECRET|" .env
 
     if ! grep -q "^APP_KEY=base64:" .env; then
-        /usr/bin/php$PHP_VERSION artisan key:generate --force
+        php artisan key:generate --force
     fi
 
     # Permissions
     sudo chown -R www-data:www-data "$INSTALL_DIR"
     sudo chmod -R 775 "$INSTALL_DIR"/storage "$INSTALL_DIR"/bootstrap/cache
-    /usr/bin/php$PHP_VERSION artisan storage:link || true
+    php artisan storage:link || true
 
     # MySQL
     echo -e "${CYAN}Configuring MySQL...${RESET}"
@@ -143,8 +141,8 @@ GRANT ALL PRIVILEGES ON $MAINDB.* TO '$DB_USER'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 
-    /usr/bin/php$PHP_VERSION artisan migrate --force
-    /usr/bin/php$PHP_VERSION artisan optimize
+    php artisan migrate --force
+    php artisan optimize
 
     # Nginx
     if [ ! -f "$NGINX_CONF" ]; then
@@ -156,7 +154,7 @@ EOF
 
     # Cron
     (crontab -l 2>/dev/null | grep -v 'artisan schedule:run'; \
-     echo "* * * * * cd $INSTALL_DIR && /usr/bin/php$PHP_VERSION artisan schedule:run >> /dev/null 2>&1") | crontab -
+     echo "* * * * * cd $INSTALL_DIR && php artisan schedule:run >> /dev/null 2>&1") | crontab -
 
     # Supervisor service
     sudo systemctl enable supervisor
@@ -169,7 +167,7 @@ EOF
     sudo bash -c "cat > $SUPERVISOR_CONF" <<EOF
 [program:laravel-queue-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=/usr/bin/php$PHP_VERSION /var/www/Moon/artisan queue:work --tries=3 --timeout=90
+command=php /var/www/Moon/artisan queue:work --tries=3 --timeout=90
 autostart=true
 autorestart=true
 numprocs=1
@@ -193,15 +191,17 @@ EOF
 
     # PHP upload limits
     echo -e "${CYAN}Configuring PHP upload limits...${RESET}"
+    
+    PHP_VERSION=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
     PHP_INI="/etc/php/$PHP_VERSION/fpm/php.ini"
-
+    
     if [ -f "$PHP_INI" ]; then
         grep -q '^upload_max_filesize = 10M' "$PHP_INI" || \
         sed -i 's/^upload_max_filesize = .*/upload_max_filesize = 10M/' "$PHP_INI"
-
+    
         grep -q '^post_max_size = 25M' "$PHP_INI" || \
         sed -i 's/^post_max_size = .*/post_max_size = 25M/' "$PHP_INI"
-
+    
         systemctl reload "php$PHP_VERSION-fpm"
     else
         echo -e "${YELLOW}Warning: $PHP_INI not found. Skipping PHP upload config.${RESET}"
@@ -215,9 +215,10 @@ EOF
 
     # moon CLI
     echo -e "${CYAN}Installing moon CLI command...${RESET}"
+    
     CLI_SOURCE="$INSTALL_DIR/cli/moon"
     CLI_TARGET="/usr/local/bin/moon"
-
+    
     if [ -f "$CLI_SOURCE" ]; then
         cp "$CLI_SOURCE" "$CLI_TARGET"
         chmod +x "$CLI_TARGET"
